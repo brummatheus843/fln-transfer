@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { formatCurrency, formatDate } from "@/lib/formatters";
 import { FileText, FileSpreadsheet, Car, DollarSign, Receipt, Percent } from "lucide-react";
@@ -16,11 +16,10 @@ export default function ReportsPage() {
   const [rides, setRides] = useState<Ride[]>([]);
   const [loading, setLoading] = useState(true);
 
-  async function fetchRides() {
-    setLoading(true);
+  const fetchRides = useCallback(async () => {
     const { data, error } = await supabase
       .from("rides")
-      .select("*, client:clients(name), driver:drivers(full_name), agency:agencies(name, commission_pct)")
+      .select("*, client:clients(name), agency:agencies(name, commission_pct)")
       .gte("scheduled_at", `${startDate}T00:00:00`)
       .lte("scheduled_at", `${endDate}T23:59:59`)
       .order("scheduled_at", { ascending: false });
@@ -30,11 +29,11 @@ export default function ReportsPage() {
     }
     setRides(data ?? []);
     setLoading(false);
-  }
+  }, [supabase, startDate, endDate]);
 
   useEffect(() => {
     fetchRides();
-  }, [startDate, endDate]);
+  }, [fetchRides]);
 
   const totalRides = rides.length;
   const totalRevenue = rides.reduce((sum, r) => sum + Number(r.price), 0);

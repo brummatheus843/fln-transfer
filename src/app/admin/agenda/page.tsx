@@ -168,7 +168,7 @@ export default function AgendaPage() {
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(new Date());
 
-  async function fetchData() {
+  const fetchData = useCallback(async () => {
     const { data, error } = await supabase
       .from("rides")
       .select("*, client:clients(name)")
@@ -192,11 +192,11 @@ export default function AgendaPage() {
     });
     setEvents(calEvents);
     setLoading(false);
-  }
+  }, [supabase]);
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [fetchData]);
 
   const eventStyleGetter = useCallback(
     (event: CalendarEvent) => ({

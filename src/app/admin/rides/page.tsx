@@ -131,7 +131,7 @@ export default function RidesPage() {
   const [customTo, setCustomTo] = useState("");
   const [showNewRide, setShowNewRide] = useState(false);
 
-  async function fetchRides() {
+  const fetchRides = useCallback(async () => {
     const { data, error } = await supabase
       .from("rides")
       .select("*, client:clients(name), driver:drivers(full_name), agency:agencies(name)")
@@ -142,11 +142,11 @@ export default function RidesPage() {
     }
     setAllRides(data ?? []);
     setLoading(false);
-  }
+  }, [supabase]);
 
   useEffect(() => {
     fetchRides();
-  }, []);
+  }, [fetchRides]);
 
   const range = getDateRange(period, customFrom, customTo);
   const periodFiltered = allRides.filter((r) => {

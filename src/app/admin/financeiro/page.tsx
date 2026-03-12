@@ -48,7 +48,7 @@ export default function FinanceiroPage() {
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
 
-  async function fetchRides() {
+  const fetchRides = useCallback(async () => {
     const { data, error } = await supabase
       .from("rides")
       .select("*, client:clients(name), agency:agencies(name, commission_pct)")
@@ -59,11 +59,11 @@ export default function FinanceiroPage() {
     }
     setAllRides(data ?? []);
     setLoading(false);
-  }
+  }, [supabase]);
 
   useEffect(() => {
     fetchRides();
-  }, []);
+  }, [fetchRides]);
 
   const range = getDateRange(period, customFrom, customTo);
   const rides = allRides.filter((r) => {

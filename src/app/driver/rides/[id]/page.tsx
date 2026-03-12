@@ -16,23 +16,24 @@ export default function DriverRideDetailPage() {
   const [status, setStatus] = useState<RideStatus>("scheduled");
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    async function fetch() {
-      const { data, error } = await supabase
-        .from("rides")
-        .select("*, client:clients(name, phone)")
-        .eq("id", id)
-        .single();
-      if (error) {
-        toast.error("Erro ao carregar corrida");
-        return;
-      }
-      setRide(data);
-      setStatus(data.status);
-      setLoading(false);
+  const fetch = useCallback(async () => {
+    const { data, error } = await supabase
+      .from("rides")
+      .select("*, client:clients(name, phone)")
+      .eq("id", id)
+      .single();
+    if (error) {
+      toast.error("Erro ao carregar corrida");
+      return;
     }
+    setRide(data);
+    setStatus(data.status);
+    setLoading(false);
+  }, [id, supabase]);
+
+  useEffect(() => {
     fetch();
-  }, [id]);
+  }, [fetch]);
 
   async function handleStart() {
     const { error } = await supabase

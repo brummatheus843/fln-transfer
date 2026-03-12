@@ -47,8 +47,8 @@ export default function DriverAgendaPage() {
   const [rides, setRides] = useState<Ride[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    async function fetch() {
+  const fetch = useCallback(async () => {
+    async function fetchData() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
@@ -80,8 +80,12 @@ export default function DriverAgendaPage() {
       setRides(data ?? []);
       setLoading(false);
     }
+    fetchData();
+  }, [supabase]);
+
+  useEffect(() => {
     fetch();
-  }, []);
+  }, [fetch]);
 
   const today = new Date().toISOString().slice(0, 10);
   const todayRides = rides.filter((r) => r.scheduled_at.slice(0, 10) === today);

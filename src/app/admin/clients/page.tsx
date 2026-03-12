@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { formatPhone } from "@/lib/formatters";
 import { Plus, Pencil, Trash2, Building2, Phone, Mail } from "lucide-react";
@@ -23,7 +23,7 @@ export default function ClientsPage() {
     notes: "",
   });
 
-  async function fetchData() {
+  const fetchData = useCallback(async () => {
     const [clientsRes, agenciesRes] = await Promise.all([
       supabase.from("clients").select("*, agency:agencies(id, name)").order("created_at", { ascending: false }),
       supabase.from("agencies").select("*").order("name"),
@@ -35,11 +35,11 @@ export default function ClientsPage() {
     setClients(clientsRes.data ?? []);
     setAgencies(agenciesRes.data ?? []);
     setLoading(false);
-  }
+  }, [supabase]);
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [fetchData]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

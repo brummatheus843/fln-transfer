@@ -35,22 +35,23 @@ export default function RideDetailPage() {
   const [ride, setRide] = useState<Ride | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    async function fetch() {
-      const { data, error } = await supabase
-        .from("rides")
-        .select("*, client:clients(name), driver:drivers(full_name), agency:agencies(name)")
-        .eq("id", id)
-        .single();
-      if (error) {
-        toast.error("Erro ao carregar corrida");
-        return;
-      }
-      setRide(data);
-      setLoading(false);
+  const fetch = useCallback(async () => {
+    const { data, error } = await supabase
+      .from("rides")
+      .select("*, client:clients(name), driver:drivers(full_name), agency:agencies(name)")
+      .eq("id", id)
+      .single();
+    if (error) {
+      toast.error("Erro ao carregar corrida");
+      return;
     }
+    setRide(data);
+    setLoading(false);
+  }, [id, supabase]);
+
+  useEffect(() => {
     fetch();
-  }, [id]);
+  }, [fetch]);
 
   async function handleCancel() {
     const { error } = await supabase

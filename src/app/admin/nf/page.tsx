@@ -13,7 +13,7 @@ export default function NFPage() {
   const [rides, setRides] = useState<Ride[]>([]);
   const [loading, setLoading] = useState(true);
 
-  async function fetchRides() {
+  const fetchRides = useCallback(async () => {
     const { data, error } = await supabase
       .from("rides")
       .select("*, client:clients(name, document), driver:drivers(full_name)")
@@ -26,11 +26,11 @@ export default function NFPage() {
     }
     setRides(data ?? []);
     setLoading(false);
-  }
+  }, [supabase]);
 
   useEffect(() => {
     fetchRides();
-  }, []);
+  }, [fetchRides]);
 
   async function generateNF(ride: Ride) {
     const nfNumber = `NF-${Date.now()}`;

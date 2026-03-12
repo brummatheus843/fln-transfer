@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, Phone, Mail, Percent } from "lucide-react";
 import { Modal } from "@/components/shared/Modal";
@@ -20,7 +20,7 @@ export default function AgenciesPage() {
     commission_pct: "",
   });
 
-  async function fetchAgencies() {
+  const fetchAgencies = useCallback(async () => {
     const { data, error } = await supabase
       .from("agencies")
       .select("*")
@@ -31,11 +31,11 @@ export default function AgenciesPage() {
     }
     setAgencies(data ?? []);
     setLoading(false);
-  }
+  }, [supabase]);
 
   useEffect(() => {
     fetchAgencies();
-  }, []);
+  }, [fetchAgencies]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

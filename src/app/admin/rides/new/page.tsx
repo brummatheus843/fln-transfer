@@ -25,19 +25,20 @@ export default function NewRidePage() {
     notes: "",
   });
 
+  const fetchOptions = useCallback(async () => {
+    const [c, d, a] = await Promise.all([
+      supabase.from("clients").select("id, name").order("name"),
+      supabase.from("drivers").select("id, full_name").eq("active", true).order("full_name"),
+      supabase.from("agencies").select("id, name").order("name"),
+    ]);
+    setClients(c.data ?? []);
+    setDrivers(d.data ?? []);
+    setAgencies(a.data ?? []);
+  }, [supabase]);
+
   useEffect(() => {
-    async function fetchOptions() {
-      const [c, d, a] = await Promise.all([
-        supabase.from("clients").select("id, name").order("name"),
-        supabase.from("drivers").select("id, full_name").eq("active", true).order("full_name"),
-        supabase.from("agencies").select("id, name").order("name"),
-      ]);
-      setClients(c.data ?? []);
-      setDrivers(d.data ?? []);
-      setAgencies(a.data ?? []);
-    }
     fetchOptions();
-  }, []);
+  }, [fetchOptions]);
 
   function handleChange(field: string, value: string | number) {
     setForm((prev) => ({ ...prev, [field]: value }));
