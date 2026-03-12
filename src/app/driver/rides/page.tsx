@@ -45,7 +45,7 @@ export default function DriverRidesPage() {
       setLoading(false);
     }
     fetch();
-  }, []);
+  }, [supabase]);
 
   if (loading) return <p className="text-admin-muted text-center py-8">Carregando...</p>;
 

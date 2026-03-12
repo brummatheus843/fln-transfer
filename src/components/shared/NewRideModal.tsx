@@ -30,7 +30,7 @@ export function NewRideModal({ open, onClose, onCreated }: NewRideModalProps) {
   useEffect(() => {
     if (!open) return;
     supabase.from("agencies").select("id, name").order("name").then(({ data }) => setAgencies(data ?? []));
-  }, [open]);
+  }, [open, supabase]);
 
   const handleCreate = useCallback(async () => {
     let clientId: string | null = null;
@@ -68,7 +68,7 @@ export function NewRideModal({ open, onClose, onCreated }: NewRideModalProps) {
     setForm({ client_name: "", agency_id: "", origin: "", destination: "", date: "", time: "", pax_count: "1", currency: "BRL", price: "", notes: "" });
     onCreated();
     onClose();
-  }, [form, onClose, onCreated]);
+  }, [form, onClose, onCreated, supabase]);
 
   return (
     <Modal open={open} onClose={onClose} title="Nova Corrida" maxWidth="max-w-lg">
