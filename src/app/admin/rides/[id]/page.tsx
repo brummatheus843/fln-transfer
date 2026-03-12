@@ -22,8 +22,8 @@ const statusBadgeClasses: Record<RideStatus, string> = {
 function DetailRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div>
-      <p className="text-admin-muted text-xs uppercase tracking-widest mb-1">{label}</p>
-      <p className="text-admin-text text-sm">{value || "—"}</p>
+      <p className="text-admin-muted text-[10px] md:text-xs uppercase tracking-widest mb-1">{label}</p>
+      <p className="text-admin-text text-sm break-words">{value || "—"}</p>
     </div>
   );
 }
@@ -70,37 +70,37 @@ export default function RideDetailPage() {
 
   return (
     <div className="animate-fade-in">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl md:text-2xl font-bold text-admin-text">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
+        <h2 className="text-lg md:text-2xl font-bold text-admin-text">
           Corrida #{ride.id.slice(0, 8)}
         </h2>
         <div className="flex gap-2">
           <button
             onClick={() => router.push(`/admin/rides/${ride.id}/edit`)}
-            className="btn-admin"
+            className="btn-admin text-xs md:text-sm flex-1 sm:flex-none"
           >
             Editar
           </button>
           {ride.status !== "cancelled" && ride.status !== "completed" && (
             <button
               onClick={handleCancel}
-              className="bg-admin-card border border-admin-red/20 text-admin-red hover:bg-admin-red/10 rounded-lg px-4 py-2 text-sm transition"
+              className="bg-admin-card border border-admin-red/20 text-admin-red hover:bg-admin-red/10 rounded-lg px-4 py-2 text-xs md:text-sm transition flex-1 sm:flex-none"
             >
-              Cancelar Corrida
+              Cancelar
             </button>
           )}
         </div>
       </div>
 
-      <div className="bg-admin-card border border-admin-border rounded-xl p-6 mb-6">
-        <div className="flex items-center gap-3 mb-6">
-          <h3 className="text-admin-text font-semibold">Detalhes</h3>
+      <div className="bg-admin-card border border-admin-border rounded-xl p-4 md:p-6 mb-4 md:mb-6">
+        <div className="flex items-center gap-3 mb-4 md:mb-6">
+          <h3 className="text-admin-text font-semibold text-sm md:text-base">Detalhes</h3>
           <span className={`text-[10px] px-2.5 py-1 rounded-full border uppercase tracking-widest font-medium ${statusBadgeClasses[ride.status]}`}>
             {statusLabels[ride.status]}
           </span>
         </div>
 
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           <DetailRow label="Cliente" value={ride.client?.name} />
           <DetailRow label="Motorista" value={ride.driver?.full_name} />
           <DetailRow label="Agência" value={ride.agency?.name} />
@@ -111,15 +111,15 @@ export default function RideDetailPage() {
           <DetailRow label="Valor" value={formatCurrency(ride.price, ride.currency)} />
           <DetailRow label="Moeda" value={ride.currency} />
           <div className="sm:col-span-2 lg:col-span-3">
-            <p className="text-admin-muted text-xs uppercase tracking-widest mb-1">Observações</p>
-            <p className="text-admin-text text-sm">{ride.notes || "—"}</p>
+            <p className="text-admin-muted text-[10px] md:text-xs uppercase tracking-widest mb-1">Observações</p>
+            <p className="text-admin-text text-sm break-words">{ride.notes || "—"}</p>
           </div>
         </div>
       </div>
 
-      <div className="bg-admin-card border border-admin-border rounded-xl p-6">
-        <h3 className="text-admin-text font-semibold mb-4">Mapa</h3>
-        <div className="bg-admin-dark rounded-xl h-48 flex items-center justify-center text-admin-muted">
+      <div className="bg-admin-card border border-admin-border rounded-xl p-4 md:p-6">
+        <h3 className="text-admin-text font-semibold mb-4 text-sm md:text-base">Mapa</h3>
+        <div className="bg-admin-dark rounded-xl h-40 md:h-48 flex items-center justify-center text-admin-muted text-xs md:text-sm text-center px-4">
           Google Maps - {ride.origin} → {ride.destination}
         </div>
       </div>

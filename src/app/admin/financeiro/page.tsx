@@ -10,6 +10,7 @@ import {
   Loader2,
   CheckCircle2,
   HandCoins,
+  MapPin,
 } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/formatters";
 import type { FinancialStatus } from "@/lib/formatters";
@@ -92,24 +93,54 @@ export default function FinanceiroPage() {
 
   return (
     <div className="animate-fade-in">
-      <h2 className="text-xl md:text-2xl font-bold text-admin-text mb-6">Financeiro</h2>
+      <h2 className="text-lg md:text-2xl font-bold text-admin-text mb-4 md:mb-6">Financeiro</h2>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6">
+      {/* Stat cards — horizontal scroll on mobile */}
+      <div className="flex md:grid md:grid-cols-4 gap-3 md:gap-4 mb-6 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
         {statCards.map((s) => (
-          <div key={s.status} className="stat-card animate-count-up">
+          <div key={s.status} className="stat-card animate-count-up min-w-[140px] shrink-0 md:min-w-0">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-admin-muted text-xs uppercase tracking-widest">
+              <p className="text-admin-muted text-[10px] md:text-xs uppercase tracking-widest leading-tight">
                 {financialStatusLabels[s.status]}
               </p>
-              <s.icon className="w-4 h-4 text-admin-gold opacity-50" />
+              <s.icon className="w-4 h-4 text-admin-gold opacity-50 shrink-0 ml-1" />
             </div>
-            <p className="text-2xl font-black text-admin-gold">{s.count}</p>
-            <p className="text-xs text-admin-muted mt-1">{formatCurrency(s.total)}</p>
+            <p className="text-xl md:text-2xl font-black text-admin-gold">{s.count}</p>
+            <p className="text-[11px] text-admin-muted mt-1">{formatCurrency(s.total)}</p>
           </div>
         ))}
       </div>
 
-      <div className="bg-admin-card border border-admin-border rounded-xl overflow-hidden">
+      {/* Mobile: card list */}
+      <div className="md:hidden space-y-3">
+        <h3 className="text-sm font-semibold text-admin-text mb-2">Corridas Recentes</h3>
+        {recentRides.map((ride) => (
+          <div key={ride.id} className="bg-admin-card border border-admin-border rounded-xl p-4 space-y-2">
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <p className="text-sm font-medium text-admin-text">{ride.client?.name ?? "—"}</p>
+                <p className="text-xs text-admin-muted">{formatDate(ride.scheduled_at)}</p>
+              </div>
+              <p className="text-sm font-bold text-admin-gold whitespace-nowrap">{formatCurrency(Number(ride.price))}</p>
+            </div>
+            <div>
+              <label className="text-[10px] text-admin-muted uppercase tracking-widest block mb-1">Status Financeiro</label>
+              <select
+                value={ride.financial_status ?? "pending"}
+                onChange={(e) => handleStatusChange(ride.id, e.target.value as FinancialStatus)}
+                className="bg-admin-dark text-xs rounded-lg px-3 py-2 border border-admin-border text-admin-text focus:outline-none focus:border-admin-gold/50 w-full"
+              >
+                {allStatuses.map((s) => (
+                  <option key={s} value={s}>{financialStatusLabels[s]}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop: table */}
+      <div className="hidden md:block bg-admin-card border border-admin-border rounded-xl overflow-hidden">
         <div className="px-5 py-4 border-b border-admin-border">
           <h3 className="text-sm font-semibold text-admin-text">Corridas Recentes</h3>
         </div>

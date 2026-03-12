@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, X } from "lucide-react";
+import { Plus, Pencil, Trash2, X, Phone, Mail, Percent } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Agency } from "@/lib/types";
 
@@ -67,29 +67,31 @@ export default function AgenciesPage() {
 
   return (
     <div className="animate-fade-in">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl md:text-2xl font-bold text-admin-text">Agências</h2>
-        <button onClick={() => setOpen(true)} className="btn-admin flex items-center gap-2">
+      <div className="flex items-center justify-between mb-4 gap-2">
+        <h2 className="text-lg md:text-2xl font-bold text-admin-text">Agências</h2>
+        <button onClick={() => setOpen(true)} className="btn-admin flex items-center gap-2 text-xs md:text-sm whitespace-nowrap">
           <Plus className="h-4 w-4" />
-          Nova Agência
+          <span className="hidden sm:inline">Nova Agência</span>
+          <span className="sm:hidden">Nova</span>
         </button>
       </div>
 
+      {/* Modal */}
       {open && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 animate-fade-in" onClick={() => setOpen(false)}>
-          <div className="bg-admin-card border border-admin-border rounded-2xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
-            <div className="px-6 pt-5 pb-3 border-b border-admin-border flex items-center justify-between">
+        <div className="fixed inset-0 bg-black/80 flex items-end md:items-center justify-center z-50 animate-fade-in" onClick={() => setOpen(false)}>
+          <div className="bg-admin-card border border-admin-border rounded-t-2xl md:rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="px-5 pt-5 pb-3 border-b border-admin-border flex items-center justify-between sticky top-0 bg-admin-card z-10">
               <h3 className="text-lg font-bold text-admin-text">Nova Agência</h3>
-              <button onClick={() => setOpen(false)} className="text-admin-muted hover:text-admin-text transition">
-                <X className="h-4 w-4" />
+              <button onClick={() => setOpen(false)} className="text-admin-muted hover:text-admin-text transition p-1">
+                <X className="h-5 w-5" />
               </button>
             </div>
-            <form onSubmit={handleSubmit} className="p-6 space-y-3">
+            <form onSubmit={handleSubmit} className="p-5 space-y-3">
               <div>
                 <label className="text-[10px] text-admin-muted uppercase tracking-widest mb-1.5 block">Nome</label>
                 <input className="admin-input w-full" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-[10px] text-admin-muted uppercase tracking-widest mb-1.5 block">Contato</label>
                   <input className="admin-input w-full" required value={form.contact_name} onChange={(e) => setForm({ ...form, contact_name: e.target.value })} />
@@ -99,7 +101,7 @@ export default function AgenciesPage() {
                   <input className="admin-input w-full" type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-[10px] text-admin-muted uppercase tracking-widest mb-1.5 block">Telefone</label>
                   <input className="admin-input w-full" required value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
@@ -109,56 +111,103 @@ export default function AgenciesPage() {
                   <input className="admin-input w-full" type="number" min={0} max={100} required value={form.commission_pct} onChange={(e) => setForm({ ...form, commission_pct: e.target.value })} />
                 </div>
               </div>
-              <div className="flex justify-end gap-2 pt-2">
-                <button type="button" onClick={() => setOpen(false)} className="bg-admin-card border border-admin-border text-admin-text-dim hover:text-admin-text hover:bg-admin-card-hover rounded-lg px-4 py-2 text-sm transition">
+              <div className="flex gap-2 pt-2">
+                <button type="button" onClick={() => setOpen(false)} className="flex-1 bg-admin-card border border-admin-border text-admin-text-dim hover:text-admin-text hover:bg-admin-card-hover rounded-lg px-4 py-2.5 text-sm transition">
                   Cancelar
                 </button>
-                <button type="submit" className="btn-admin">Salvar</button>
+                <button type="submit" className="flex-1 btn-admin py-2.5">Salvar</button>
               </div>
             </form>
           </div>
         </div>
       )}
 
-      <div className="bg-admin-card border border-admin-border rounded-xl overflow-hidden">
-        {loading ? (
-          <p className="text-admin-muted text-center py-8">Carregando...</p>
-        ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-admin-border">
-                <th className="text-left px-4 py-2.5 text-admin-muted text-xs uppercase tracking-widest">Nome</th>
-                <th className="text-left px-4 py-2.5 text-admin-muted text-xs uppercase tracking-widest">Contato</th>
-                <th className="text-left px-4 py-2.5 text-admin-muted text-xs uppercase tracking-widest">Email</th>
-                <th className="text-left px-4 py-2.5 text-admin-muted text-xs uppercase tracking-widest">Telefone</th>
-                <th className="text-left px-4 py-2.5 text-admin-muted text-xs uppercase tracking-widest">Comissão%</th>
-                <th className="text-left px-4 py-2.5 text-admin-muted text-xs uppercase tracking-widest w-[100px]">Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              {agencies.map((agency) => (
-                <tr key={agency.id} className="border-b border-admin-border/50 hover:bg-admin-card-hover transition">
-                  <td className="px-4 py-3 text-admin-text font-medium">{agency.name}</td>
-                  <td className="px-4 py-3 text-admin-text-dim">{agency.contact_name}</td>
-                  <td className="px-4 py-3 text-admin-text-dim">{agency.email}</td>
-                  <td className="px-4 py-3 text-admin-text-dim">{agency.phone}</td>
-                  <td className="px-4 py-3 text-admin-gold font-bold">{agency.commission_pct}%</td>
-                  <td className="px-4 py-3">
-                    <div className="flex gap-1">
+      {loading ? (
+        <p className="text-admin-muted text-center py-8">Carregando...</p>
+      ) : (
+        <>
+          {/* Mobile: cards */}
+          <div className="md:hidden space-y-3">
+            {agencies.length === 0 ? (
+              <p className="text-admin-muted text-center py-8">Nenhuma agência cadastrada.</p>
+            ) : (
+              agencies.map((agency) => (
+                <div key={agency.id} className="bg-admin-card border border-admin-border rounded-xl p-4">
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div>
+                      <p className="font-medium text-admin-text text-sm">{agency.name}</p>
+                      {agency.contact_name && <p className="text-xs text-admin-muted">{agency.contact_name}</p>}
+                    </div>
+                    <div className="flex gap-1 shrink-0">
                       <button className="p-1.5 rounded-lg text-admin-muted hover:text-admin-text hover:bg-admin-card-hover transition">
-                        <Pencil className="h-4 w-4" />
+                        <Pencil className="h-3.5 w-3.5" />
                       </button>
                       <button className="p-1.5 rounded-lg text-admin-muted hover:text-admin-red hover:bg-admin-red/10 transition" onClick={() => handleDelete(agency.id)}>
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="h-3.5 w-3.5" />
                       </button>
                     </div>
-                  </td>
+                  </div>
+                  <div className="space-y-1 text-xs text-admin-text-dim">
+                    {agency.email && (
+                      <div className="flex items-center gap-1.5">
+                        <Mail className="h-3 w-3 text-admin-muted shrink-0" />
+                        <span className="truncate">{agency.email}</span>
+                      </div>
+                    )}
+                    {agency.phone && (
+                      <div className="flex items-center gap-1.5">
+                        <Phone className="h-3 w-3 text-admin-muted shrink-0" />
+                        <span>{agency.phone}</span>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-1.5">
+                      <Percent className="h-3 w-3 text-admin-gold shrink-0" />
+                      <span className="text-admin-gold font-bold">{agency.commission_pct}% comissão</span>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Desktop: table */}
+          <div className="hidden md:block bg-admin-card border border-admin-border rounded-xl overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-admin-border">
+                  <th className="text-left px-4 py-2.5 text-admin-muted text-xs uppercase tracking-widest">Nome</th>
+                  <th className="text-left px-4 py-2.5 text-admin-muted text-xs uppercase tracking-widest">Contato</th>
+                  <th className="text-left px-4 py-2.5 text-admin-muted text-xs uppercase tracking-widest">Email</th>
+                  <th className="text-left px-4 py-2.5 text-admin-muted text-xs uppercase tracking-widest">Telefone</th>
+                  <th className="text-left px-4 py-2.5 text-admin-muted text-xs uppercase tracking-widest">Comissão%</th>
+                  <th className="text-left px-4 py-2.5 text-admin-muted text-xs uppercase tracking-widest w-[100px]">Ações</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+              </thead>
+              <tbody>
+                {agencies.map((agency) => (
+                  <tr key={agency.id} className="border-b border-admin-border/50 hover:bg-admin-card-hover transition">
+                    <td className="px-4 py-3 text-admin-text font-medium">{agency.name}</td>
+                    <td className="px-4 py-3 text-admin-text-dim">{agency.contact_name}</td>
+                    <td className="px-4 py-3 text-admin-text-dim">{agency.email}</td>
+                    <td className="px-4 py-3 text-admin-text-dim">{agency.phone}</td>
+                    <td className="px-4 py-3 text-admin-gold font-bold">{agency.commission_pct}%</td>
+                    <td className="px-4 py-3">
+                      <div className="flex gap-1">
+                        <button className="p-1.5 rounded-lg text-admin-muted hover:text-admin-text hover:bg-admin-card-hover transition">
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                        <button className="p-1.5 rounded-lg text-admin-muted hover:text-admin-red hover:bg-admin-red/10 transition" onClick={() => handleDelete(agency.id)}>
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
     </div>
   );
 }

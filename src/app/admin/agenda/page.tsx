@@ -149,15 +149,16 @@ export default function AgendaPage() {
 
   return (
     <div className="animate-fade-in">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl md:text-2xl font-bold text-admin-text">Agenda</h2>
-        <button onClick={() => setShowRideModal(true)} className="btn-admin flex items-center gap-2">
+      <div className="flex items-center justify-between mb-4 gap-2">
+        <h2 className="text-lg md:text-2xl font-bold text-admin-text">Agenda</h2>
+        <button onClick={() => setShowRideModal(true)} className="btn-admin flex items-center gap-2 text-xs md:text-sm whitespace-nowrap">
           <Plus className="w-4 h-4" />
-          Lançar Nova Corrida
+          <span className="hidden sm:inline">Lançar Nova Corrida</span>
+          <span className="sm:hidden">Nova</span>
         </button>
       </div>
 
-      <div className="bg-admin-card border border-admin-border rounded-xl p-5">
+      <div className="bg-admin-card border border-admin-border rounded-xl p-3 md:p-5 overflow-hidden">
         <style jsx global>{`
           .rbc-calendar { background: transparent; color: #e0e0e0; }
           .rbc-toolbar button { color: #999; border: 1px solid #2a2a2a; background: #1a1a1a; }
@@ -177,22 +178,24 @@ export default function AgendaPage() {
           .rbc-time-header-content { border-left: 1px solid #2a2a2a; }
           .rbc-time-gutter .rbc-label { color: #6b6b6b; font-size: 10px; }
         `}</style>
-        <div style={{ minHeight: 600 }}>
+        <div className="min-h-[400px] md:min-h-[600px]">
           <Calendar
             localizer={localizer}
             events={events}
             startAccessor="start"
             endAccessor="end"
-            style={{ height: 600 }}
+            style={{ height: "100%", minHeight: "inherit" }}
             culture="pt-BR"
             eventPropGetter={eventStyleGetter}
+            views={["month", "week", "day"]}
+            defaultView="month"
           />
         </div>
       </div>
 
       {showRideModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="bg-admin-dark border border-admin-border rounded-xl w-full max-w-lg p-6 animate-fade-in">
+        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/60">
+          <div className="bg-admin-dark border border-admin-border rounded-t-2xl md:rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-5 md:p-6 animate-fade-in">
             <div className="flex items-center justify-between mb-5">
               <h3 className="text-lg font-bold text-admin-text">Nova Corrida</h3>
               <button onClick={() => setShowRideModal(false)} className="text-admin-muted hover:text-admin-text">
@@ -260,8 +263,8 @@ export default function AgendaPage() {
       )}
 
       {showClientModal && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4">
-          <div className="bg-admin-dark border border-admin-border rounded-xl w-full max-w-sm p-6 animate-fade-in">
+        <div className="fixed inset-0 z-[60] flex items-end md:items-center justify-center bg-black/60">
+          <div className="bg-admin-dark border border-admin-border rounded-t-2xl md:rounded-xl w-full max-w-sm max-h-[90vh] overflow-y-auto p-5 md:p-6 animate-fade-in">
             <div className="flex items-center justify-between mb-5">
               <h3 className="text-lg font-bold text-admin-text">Novo Cliente</h3>
               <button onClick={() => setShowClientModal(false)} className="text-admin-muted hover:text-admin-text">

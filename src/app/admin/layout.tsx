@@ -1,5 +1,6 @@
 import { Sidebar } from "@/components/shared/Sidebar";
 import { Header } from "@/components/shared/Header";
+import { BottomNav } from "@/components/shared/BottomNav";
 
 export default function AdminLayout({
   children,
@@ -18,8 +19,11 @@ export default function AdminLayout({
       {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0 md:ml-64">
         <Header />
-        <main className="flex-1 p-4 md:p-6 overflow-auto">{children}</main>
+        <main className="flex-1 p-4 md:p-6 pb-20 md:pb-6 overflow-auto">{children}</main>
       </div>
+
+      {/* Mobile bottom nav */}
+      <BottomNav />
     </div>
   );
 }

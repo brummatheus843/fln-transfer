@@ -51,7 +51,6 @@ export default function ReportsPage() {
     doc.text("Relatório de Corridas - FLN Transfer", 14, 22);
     doc.setFontSize(10);
     doc.text(`Período: ${startDate} a ${endDate}`, 14, 32);
-
     doc.setFontSize(12);
     doc.text(`Total de Corridas: ${totalRides}`, 14, 44);
     doc.text(`Receita Total: ${formatCurrency(totalRevenue)}`, 14, 52);
@@ -70,10 +69,7 @@ export default function ReportsPage() {
 
     rides.forEach((r) => {
       y += 8;
-      if (y > 280) {
-        doc.addPage();
-        y = 20;
-      }
+      if (y > 280) { doc.addPage(); y = 20; }
       doc.text(formatDate(r.scheduled_at), 14, y);
       doc.text(r.client?.name ?? "—", 40, y);
       doc.text(r.origin, 80, y);
@@ -105,58 +101,63 @@ export default function ReportsPage() {
 
   return (
     <div className="animate-fade-in">
-      <h2 className="text-xl md:text-2xl font-bold text-admin-text mb-6">Relatórios</h2>
+      <h2 className="text-lg md:text-2xl font-bold text-admin-text mb-4 md:mb-6">Relatórios</h2>
 
-      <div className="flex flex-wrap items-end gap-4 mb-6">
-        <div>
-          <label className="text-[10px] text-admin-muted uppercase tracking-widest mb-1.5 block">Data Início</label>
-          <input className="admin-input w-full" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+      {/* Filters */}
+      <div className="space-y-3 md:space-y-0 md:flex md:flex-wrap md:items-end md:gap-4 mb-6">
+        <div className="grid grid-cols-2 gap-3 md:contents">
+          <div>
+            <label className="text-[10px] text-admin-muted uppercase tracking-widest mb-1.5 block">Data Início</label>
+            <input className="admin-input w-full" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+          </div>
+          <div>
+            <label className="text-[10px] text-admin-muted uppercase tracking-widest mb-1.5 block">Data Fim</label>
+            <input className="admin-input w-full" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+          </div>
         </div>
-        <div>
-          <label className="text-[10px] text-admin-muted uppercase tracking-widest mb-1.5 block">Data Fim</label>
-          <input className="admin-input w-full" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+        <div className="flex gap-2">
+          <button onClick={exportPDF} className="btn-admin flex-1 md:flex-none flex items-center justify-center gap-2 text-xs md:text-sm py-2.5" disabled={loading}>
+            <FileText className="h-4 w-4" />
+            PDF
+          </button>
+          <button onClick={exportExcel} className="bg-admin-card border border-admin-border text-admin-text-dim hover:text-admin-text hover:bg-admin-card-hover rounded-lg px-4 py-2.5 text-xs md:text-sm transition flex-1 md:flex-none flex items-center justify-center gap-2" disabled={loading}>
+            <FileSpreadsheet className="h-4 w-4" />
+            Excel
+          </button>
         </div>
-        <button onClick={exportPDF} className="btn-admin flex items-center gap-2" disabled={loading}>
-          <FileText className="h-4 w-4" />
-          Exportar PDF
-        </button>
-        <button onClick={exportExcel} className="bg-admin-card border border-admin-border text-admin-text-dim hover:text-admin-text hover:bg-admin-card-hover rounded-lg px-4 py-2 text-sm transition flex items-center gap-2" disabled={loading}>
-          <FileSpreadsheet className="h-4 w-4" />
-          Exportar Excel
-        </button>
       </div>
 
       {loading ? (
         <p className="text-admin-muted text-center py-8">Carregando...</p>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-6">
+        <div className="grid gap-3 grid-cols-2 lg:grid-cols-4 mb-6">
           <div className="stat-card animate-count-up">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-admin-muted text-xs uppercase tracking-widest">Total Corridas</span>
-              <Car className="h-4 w-4 text-admin-muted" />
+              <span className="text-admin-muted text-[10px] md:text-xs uppercase tracking-widest leading-tight">Total Corridas</span>
+              <Car className="h-4 w-4 text-admin-muted shrink-0" />
             </div>
-            <div className="text-2xl font-black text-admin-gold">{totalRides}</div>
+            <div className="text-xl md:text-2xl font-black text-admin-gold">{totalRides}</div>
           </div>
           <div className="stat-card animate-count-up">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-admin-muted text-xs uppercase tracking-widest">Receita Total</span>
-              <DollarSign className="h-4 w-4 text-admin-muted" />
+              <span className="text-admin-muted text-[10px] md:text-xs uppercase tracking-widest leading-tight">Receita</span>
+              <DollarSign className="h-4 w-4 text-admin-muted shrink-0" />
             </div>
-            <div className="text-2xl font-black text-admin-gold">{formatCurrency(totalRevenue)}</div>
+            <div className="text-lg md:text-2xl font-black text-admin-gold">{formatCurrency(totalRevenue)}</div>
           </div>
           <div className="stat-card animate-count-up">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-admin-muted text-xs uppercase tracking-widest">Ticket Médio</span>
-              <Receipt className="h-4 w-4 text-admin-muted" />
+              <span className="text-admin-muted text-[10px] md:text-xs uppercase tracking-widest leading-tight">Ticket Médio</span>
+              <Receipt className="h-4 w-4 text-admin-muted shrink-0" />
             </div>
-            <div className="text-2xl font-black text-admin-gold">{formatCurrency(avgTicket)}</div>
+            <div className="text-lg md:text-2xl font-black text-admin-gold">{formatCurrency(avgTicket)}</div>
           </div>
           <div className="stat-card animate-count-up">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-admin-muted text-xs uppercase tracking-widest">Comissões</span>
-              <Percent className="h-4 w-4 text-admin-muted" />
+              <span className="text-admin-muted text-[10px] md:text-xs uppercase tracking-widest leading-tight">Comissões</span>
+              <Percent className="h-4 w-4 text-admin-muted shrink-0" />
             </div>
-            <div className="text-2xl font-black text-admin-gold">{formatCurrency(totalCommissions)}</div>
+            <div className="text-lg md:text-2xl font-black text-admin-gold">{formatCurrency(totalCommissions)}</div>
           </div>
         </div>
       )}
