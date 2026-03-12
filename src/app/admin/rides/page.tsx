@@ -20,13 +20,45 @@ const statusBadgeClasses: Record<RideStatus, string> = {
   cancelled: "bg-admin-red/10 text-admin-red border-admin-red/20",
 };
 
-const tabs = [
+const statusTabs = [
   { key: "todas", label: "Todas", status: null },
   { key: "agendadas", label: "Agendadas", status: "scheduled" as RideStatus },
   { key: "em_andamento", label: "Em andamento", status: "in_progress" as RideStatus },
   { key: "finalizadas", label: "Finalizadas", status: "completed" as RideStatus },
   { key: "canceladas", label: "Canceladas", status: "cancelled" as RideStatus },
 ];
+
+type PeriodKey = "hoje" | "semana" | "mes" | "todos";
+
+const periodTabs: { key: PeriodKey; label: string }[] = [
+  { key: "hoje", label: "Hoje" },
+  { key: "semana", label: "Semana" },
+  { key: "mes", label: "Mês" },
+  { key: "todos", label: "Todos" },
+];
+
+function getDateRange(period: PeriodKey): { from: string; to: string } | null {
+  const now = new Date();
+  const fmt = (d: Date) => d.toISOString().slice(0, 10);
+  switch (period) {
+    case "hoje":
+      return { from: fmt(now), to: fmt(now) };
+    case "semana": {
+      const start = new Date(now);
+      start.setDate(now.getDate() - now.getDay());
+      const end = new Date(start);
+      end.setDate(start.getDate() + 6);
+      return { from: fmt(start), to: fmt(end) };
+    }
+    case "mes":
+      return {
+        from: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`,
+        to: fmt(new Date(now.getFullYear(), now.getMonth() + 1, 0)),
+      };
+    case "todos":
+      return null;
+  }
+}
 
 function RideCard({ ride }: { ride: Ride }) {
   return (
@@ -121,9 +153,10 @@ function RidesTable({ items }: { items: Ride[] }) {
 
 export default function RidesPage() {
   const supabase = createClient();
-  const [rides, setRides] = useState<Ride[]>([]);
+  const [allRides, setAllRides] = useState<Ride[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("todas");
+  const [period, setPeriod] = useState<PeriodKey>("mes");
 
   useEffect(() => {
     async function fetch() {
@@ -135,14 +168,24 @@ export default function RidesPage() {
         toast.error("Erro ao carregar corridas");
         return;
       }
-      setRides(data ?? []);
+      setAllRides(data ?? []);
       setLoading(false);
     }
     fetch();
   }, []);
 
-  const activeStatus = tabs.find((t) => t.key === activeTab)?.status ?? null;
-  const filtered = activeStatus ? rides.filter((r) => r.status === activeStatus) : rides;
+  // Filter by period
+  const range = getDateRange(period);
+  const periodFiltered = range
+    ? allRides.filter((r) => {
+        const d = r.scheduled_at.slice(0, 10);
+        return d >= range.from && d <= range.to;
+      })
+    : allRides;
+
+  // Filter by status
+  const activeStatus = statusTabs.find((t) => t.key === activeTab)?.status ?? null;
+  const filtered = activeStatus ? periodFiltered.filter((r) => r.status === activeStatus) : periodFiltered;
 
   return (
     <div className="animate-fade-in">
@@ -153,13 +196,14 @@ export default function RidesPage() {
         </Link>
       </div>
 
-      <div className="flex items-center gap-1.5 mb-4 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
-        {tabs.map((tab) => (
+      {/* Period filter */}
+      <div className="flex items-center gap-1.5 mb-3 overflow-x-auto pb-1 scrollbar-hide">
+        {periodTabs.map((tab) => (
           <button
             key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            className={`text-[10px] px-2.5 py-1.5 rounded-full border uppercase tracking-widest font-medium transition whitespace-nowrap shrink-0 ${
-              activeTab === tab.key
+            onClick={() => setPeriod(tab.key)}
+            className={`text-[10px] px-3 py-1.5 rounded-full border uppercase tracking-widest font-medium transition whitespace-nowrap shrink-0 ${
+              period === tab.key
                 ? "bg-admin-gold/10 text-admin-gold border-admin-gold/20"
                 : "text-admin-text-dim hover:text-admin-text hover:bg-admin-card border-transparent"
             }`}
@@ -167,6 +211,24 @@ export default function RidesPage() {
             {tab.label}
           </button>
         ))}
+      </div>
+
+      {/* Status filter */}
+      <div className="flex items-center gap-1.5 mb-4 overflow-x-auto pb-1 scrollbar-hide">
+        {statusTabs.map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            className={`text-[10px] px-2.5 py-1.5 rounded-full border uppercase tracking-widest font-medium transition whitespace-nowrap shrink-0 ${
+              activeTab === tab.key
+                ? "bg-admin-card text-admin-text border-admin-border"
+                : "text-admin-text-dim hover:text-admin-text hover:bg-admin-card border-transparent"
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+        <span className="text-[10px] text-admin-muted ml-1 shrink-0">{filtered.length} resultado{filtered.length !== 1 ? "s" : ""}</span>
       </div>
 
       {loading ? (

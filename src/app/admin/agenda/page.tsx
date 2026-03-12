@@ -5,11 +5,11 @@ import { Calendar, dateFnsLocalizer } from "react-big-calendar";
 import { format, parse, startOfWeek, getDay } from "date-fns";
 import { ptBR } from "date-fns/locale/pt-BR";
 import "react-big-calendar/lib/css/react-big-calendar.css";
-import { Plus, X, UserPlus } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import { toast } from "sonner";
 import type { RideStatus } from "@/lib/formatters";
 import { createClient } from "@/lib/supabase/client";
-import type { Client } from "@/lib/types";
+import type { Agency } from "@/lib/types";
 
 const locales = { "pt-BR": ptBR };
 
@@ -42,30 +42,37 @@ type CalendarEvent = {
   status: RideStatus;
 };
 
+const inputClass =
+  "w-full bg-admin-card border border-admin-border rounded-lg px-3 py-2 text-sm text-admin-text focus:outline-none focus:border-admin-gold/50";
+
 export default function AgendaPage() {
   const supabase = createClient();
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [showRideModal, setShowRideModal] = useState(false);
-  const [showClientModal, setShowClientModal] = useState(false);
-  const [clients, setClients] = useState<Pick<Client, "id" | "name">[]>([]);
+  const [agencies, setAgencies] = useState<Pick<Agency, "id" | "name">[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [rideForm, setRideForm] = useState({
-    client_id: "",
+    client_name: "",
+    agency_id: "",
     origin: "",
     destination: "",
     date: "",
     time: "",
+    pax_count: "1",
+    currency: "BRL",
     price: "",
     notes: "",
   });
 
-  const [clientForm, setClientForm] = useState({ name: "", phone: "" });
+  function setField(field: string, value: string) {
+    setRideForm((p) => ({ ...p, [field]: value }));
+  }
 
   async function fetchData() {
-    const [ridesRes, clientsRes] = await Promise.all([
+    const [ridesRes, agenciesRes] = await Promise.all([
       supabase.from("rides").select("*, client:clients(name)").order("scheduled_at"),
-      supabase.from("clients").select("id, name").order("name"),
+      supabase.from("agencies").select("id, name").order("name"),
     ]);
     if (ridesRes.error) {
       toast.error("Erro ao carregar agenda");
@@ -77,14 +84,14 @@ export default function AgendaPage() {
       const end = new Date(start);
       end.setHours(end.getHours() + 1);
       return {
-        title: `${r.client?.name ?? "—"} - ${r.origin} → ${r.destination}`,
+        title: `${r.client?.name ?? "—"} — ${r.origin} → ${r.destination}`,
         start,
         end,
         status: r.status as RideStatus,
       };
     });
     setEvents(calEvents);
-    setClients(clientsRes.data ?? []);
+    setAgencies(agenciesRes.data ?? []);
     setLoading(false);
   }
 
@@ -93,47 +100,62 @@ export default function AgendaPage() {
   }, []);
 
   const handleCreateRide = useCallback(async () => {
-    if (!rideForm.client_id || !rideForm.origin || !rideForm.destination || !rideForm.date || !rideForm.time) return;
+    if (!rideForm.client_name.trim() || !rideForm.origin || !rideForm.destination || !rideForm.date || !rideForm.time) {
+      toast.error("Preencha os campos obrigatórios: Cliente, Origem, Destino, Data e Hora");
+      return;
+    }
+
+    // Auto-create client by name
+    let clientId: string | null = null;
+    const name = rideForm.client_name.trim();
+
+    // Check if client already exists
+    const { data: existing } = await supabase
+      .from("clients")
+      .select("id")
+      .ilike("name", name)
+      .limit(1)
+      .single();
+
+    if (existing) {
+      clientId = existing.id;
+    } else {
+      // Create new client
+      const { data: newClient, error: clientErr } = await supabase
+        .from("clients")
+        .insert({ name, agency_id: rideForm.agency_id || null })
+        .select("id")
+        .single();
+      if (clientErr) {
+        toast.error("Erro ao criar cliente");
+        return;
+      }
+      clientId = newClient.id;
+    }
+
     const scheduled_at = `${rideForm.date}T${rideForm.time}:00`;
     const { error } = await supabase.from("rides").insert({
-      client_id: rideForm.client_id,
+      client_id: clientId,
+      agency_id: rideForm.agency_id || null,
       origin: rideForm.origin,
       destination: rideForm.destination,
       scheduled_at,
+      pax_count: Number(rideForm.pax_count) || 1,
+      currency: rideForm.currency,
       price: Number(rideForm.price) || 0,
       notes: rideForm.notes || null,
       status: "scheduled",
       financial_status: "pending",
-      pax_count: 1,
-      currency: "BRL",
     });
     if (error) {
       toast.error("Erro ao criar corrida");
       return;
     }
     toast.success("Corrida criada!");
-    setRideForm({ client_id: "", origin: "", destination: "", date: "", time: "", price: "", notes: "" });
+    setRideForm({ client_name: "", agency_id: "", origin: "", destination: "", date: "", time: "", pax_count: "1", currency: "BRL", price: "", notes: "" });
     setShowRideModal(false);
     fetchData();
   }, [rideForm]);
-
-  const handleCreateClient = useCallback(async () => {
-    if (!clientForm.name) return;
-    const { data, error } = await supabase
-      .from("clients")
-      .insert({ name: clientForm.name, phone: clientForm.phone || null })
-      .select("id, name")
-      .single();
-    if (error) {
-      toast.error("Erro ao criar cliente");
-      return;
-    }
-    toast.success("Cliente criado!");
-    setClients((prev) => [...prev, data]);
-    setRideForm((prev) => ({ ...prev, client_id: data.id }));
-    setClientForm({ name: "", phone: "" });
-    setShowClientModal(false);
-  }, [clientForm]);
 
   const eventStyleGetter = useCallback((event: CalendarEvent) => ({
     style: {
@@ -193,95 +215,96 @@ export default function AgendaPage() {
         </div>
       </div>
 
+      {/* Modal Nova Corrida */}
       {showRideModal && (
-        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/60">
-          <div className="bg-admin-dark border border-admin-border rounded-t-2xl md:rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-5 md:p-6 animate-fade-in">
-            <div className="flex items-center justify-between mb-5">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setShowRideModal(false)}>
+          <div className="bg-admin-dark border border-admin-border rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-5 md:p-6 animate-fade-in" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold text-admin-text">Nova Corrida</h3>
-              <button onClick={() => setShowRideModal(false)} className="text-admin-muted hover:text-admin-text">
+              <button onClick={() => setShowRideModal(false)} className="text-admin-muted hover:text-admin-text p-1">
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="space-y-4">
+
+            <div className="space-y-3">
+              {/* 1 — Cliente (texto livre) */}
               <div>
-                <label className="text-xs text-admin-muted uppercase tracking-widest mb-1 block">Cliente</label>
-                <div className="flex gap-2">
+                <label className="text-[10px] text-admin-muted uppercase tracking-widest mb-1 block">Cliente *</label>
+                <input
+                  value={rideForm.client_name}
+                  onChange={(e) => setField("client_name", e.target.value)}
+                  className={inputClass}
+                  placeholder="Digite o nome do cliente"
+                />
+                <p className="text-[10px] text-admin-muted mt-0.5">Se não existir, será cadastrado automaticamente</p>
+              </div>
+
+              {/* 2 — Agência + Data/Hora */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="text-[10px] text-admin-muted uppercase tracking-widest mb-1 block">Agência</label>
                   <select
-                    value={rideForm.client_id}
-                    onChange={(e) => setRideForm((p) => ({ ...p, client_id: e.target.value }))}
-                    className="flex-1 bg-admin-card border border-admin-border rounded-lg px-3 py-2 text-sm text-admin-text focus:outline-none focus:border-admin-gold/50"
+                    value={rideForm.agency_id}
+                    onChange={(e) => setField("agency_id", e.target.value)}
+                    className={inputClass}
                   >
-                    <option value="">Selecionar cliente...</option>
-                    {clients.map((c) => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
+                    <option value="">Sem agência</option>
+                    {agencies.map((a) => (
+                      <option key={a.id} value={a.id}>{a.name}</option>
                     ))}
                   </select>
-                  <button
-                    type="button"
-                    onClick={() => setShowClientModal(true)}
-                    className="p-2 bg-admin-card border border-admin-border rounded-lg text-admin-gold hover:bg-admin-gold/10 transition"
-                    title="Novo Cliente"
-                  >
-                    <UserPlus className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs text-admin-muted uppercase tracking-widest mb-1 block">Origem</label>
-                  <input value={rideForm.origin} onChange={(e) => setRideForm((p) => ({ ...p, origin: e.target.value }))} className="w-full bg-admin-card border border-admin-border rounded-lg px-3 py-2 text-sm text-admin-text focus:outline-none focus:border-admin-gold/50" placeholder="Ex: Aeroporto FLN" />
                 </div>
                 <div>
-                  <label className="text-xs text-admin-muted uppercase tracking-widest mb-1 block">Destino</label>
-                  <input value={rideForm.destination} onChange={(e) => setRideForm((p) => ({ ...p, destination: e.target.value }))} className="w-full bg-admin-card border border-admin-border rounded-lg px-3 py-2 text-sm text-admin-text focus:outline-none focus:border-admin-gold/50" placeholder="Ex: Jurerê Internacional" />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs text-admin-muted uppercase tracking-widest mb-1 block">Data</label>
-                  <input type="date" value={rideForm.date} onChange={(e) => setRideForm((p) => ({ ...p, date: e.target.value }))} className="w-full bg-admin-card border border-admin-border rounded-lg px-3 py-2 text-sm text-admin-text focus:outline-none focus:border-admin-gold/50" />
+                  <label className="text-[10px] text-admin-muted uppercase tracking-widest mb-1 block">Data *</label>
+                  <input type="date" value={rideForm.date} onChange={(e) => setField("date", e.target.value)} className={inputClass} />
                 </div>
                 <div>
-                  <label className="text-xs text-admin-muted uppercase tracking-widest mb-1 block">Horário</label>
-                  <input type="time" value={rideForm.time} onChange={(e) => setRideForm((p) => ({ ...p, time: e.target.value }))} className="w-full bg-admin-card border border-admin-border rounded-lg px-3 py-2 text-sm text-admin-text focus:outline-none focus:border-admin-gold/50" />
+                  <label className="text-[10px] text-admin-muted uppercase tracking-widest mb-1 block">Hora *</label>
+                  <input type="time" value={rideForm.time} onChange={(e) => setField("time", e.target.value)} className={inputClass} />
                 </div>
               </div>
-              <div>
-                <label className="text-xs text-admin-muted uppercase tracking-widest mb-1 block">Valor (R$)</label>
-                <input type="number" value={rideForm.price} onChange={(e) => setRideForm((p) => ({ ...p, price: e.target.value }))} className="w-full bg-admin-card border border-admin-border rounded-lg px-3 py-2 text-sm text-admin-text focus:outline-none focus:border-admin-gold/50" placeholder="0,00" />
-              </div>
-              <div>
-                <label className="text-xs text-admin-muted uppercase tracking-widest mb-1 block">Observação</label>
-                <textarea value={rideForm.notes} onChange={(e) => setRideForm((p) => ({ ...p, notes: e.target.value }))} rows={2} className="w-full bg-admin-card border border-admin-border rounded-lg px-3 py-2 text-sm text-admin-text focus:outline-none focus:border-admin-gold/50 resize-none" />
-              </div>
-              <button onClick={handleCreateRide} className="btn-admin w-full">
-                Criar Corrida
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
-      {showClientModal && (
-        <div className="fixed inset-0 z-[60] flex items-end md:items-center justify-center bg-black/60">
-          <div className="bg-admin-dark border border-admin-border rounded-t-2xl md:rounded-xl w-full max-w-sm max-h-[90vh] overflow-y-auto p-5 md:p-6 animate-fade-in">
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="text-lg font-bold text-admin-text">Novo Cliente</h3>
-              <button onClick={() => setShowClientModal(false)} className="text-admin-muted hover:text-admin-text">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="text-xs text-admin-muted uppercase tracking-widest mb-1 block">Nome</label>
-                <input value={clientForm.name} onChange={(e) => setClientForm((p) => ({ ...p, name: e.target.value }))} className="w-full bg-admin-card border border-admin-border rounded-lg px-3 py-2 text-sm text-admin-text focus:outline-none focus:border-admin-gold/50" placeholder="Nome completo" />
+              {/* 3 — Origem + Destino */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] text-admin-muted uppercase tracking-widest mb-1 block">Origem *</label>
+                  <input value={rideForm.origin} onChange={(e) => setField("origin", e.target.value)} className={inputClass} placeholder="Ex: Aeroporto FLN" />
+                </div>
+                <div>
+                  <label className="text-[10px] text-admin-muted uppercase tracking-widest mb-1 block">Destino *</label>
+                  <input value={rideForm.destination} onChange={(e) => setField("destination", e.target.value)} className={inputClass} placeholder="Ex: Jurerê Internacional" />
+                </div>
               </div>
-              <div>
-                <label className="text-xs text-admin-muted uppercase tracking-widest mb-1 block">Telefone</label>
-                <input value={clientForm.phone} onChange={(e) => setClientForm((p) => ({ ...p, phone: e.target.value }))} className="w-full bg-admin-card border border-admin-border rounded-lg px-3 py-2 text-sm text-admin-text focus:outline-none focus:border-admin-gold/50" placeholder="(48) 99999-9999" />
+
+              {/* 4 — Passageiros + Moeda/Valor */}
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="text-[10px] text-admin-muted uppercase tracking-widest mb-1 block">Passageiros</label>
+                  <input type="number" min={1} value={rideForm.pax_count} onChange={(e) => setField("pax_count", e.target.value)} className={inputClass} />
+                </div>
+                <div>
+                  <label className="text-[10px] text-admin-muted uppercase tracking-widest mb-1 block">Moeda</label>
+                  <select value={rideForm.currency} onChange={(e) => setField("currency", e.target.value)} className={inputClass}>
+                    <option value="BRL">R$</option>
+                    <option value="USD">US$</option>
+                    <option value="EUR">€</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] text-admin-muted uppercase tracking-widest mb-1 block">Valor</label>
+                  <input type="number" min={0} step={0.01} value={rideForm.price} onChange={(e) => setField("price", e.target.value)} className={inputClass} placeholder="0,00" />
+                </div>
               </div>
-              <button onClick={handleCreateClient} className="btn-admin w-full">
-                Criar e Selecionar
+
+              {/* 5 — Observações */}
+              <div>
+                <label className="text-[10px] text-admin-muted uppercase tracking-widest mb-1 block">Observações</label>
+                <textarea value={rideForm.notes} onChange={(e) => setField("notes", e.target.value)} rows={2} className={`${inputClass} resize-none`} placeholder="Informações adicionais..." />
+              </div>
+
+              {/* Botão */}
+              <button onClick={handleCreateRide} className="btn-admin w-full py-2.5 mt-1">
+                Criar Corrida
               </button>
             </div>
           </div>
