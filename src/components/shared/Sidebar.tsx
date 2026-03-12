@@ -32,7 +32,7 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
     <aside className="flex h-full w-64 flex-col bg-admin-dark border-r border-admin-border p-5">
       {/* Logo */}
       <div className="mb-6">
-        <h1 className="text-xl font-black shimmer-gold tracking-tight">
+        <h1 className="text-xl font-black shimmer-silver tracking-tight">
           FLN TRANSFER
         </h1>
         <p className="text-[10px] text-admin-muted uppercase tracking-widest mt-1">
@@ -40,8 +40,8 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
         </p>
       </div>
 
-      {/* Gold separator */}
-      <div className="gold-separator mb-4" />
+      {/* Silver separator */}
+      <div className="silver-separator mb-4" />
 
       {/* Navigation */}
       <nav className="flex-1 space-y-1">
@@ -56,7 +56,7 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
               className={cn(
                 "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all animate-slide-in border",
                 active
-                  ? "bg-admin-gold/10 text-admin-gold border-admin-gold/20"
+                  ? "bg-admin-silver/10 text-admin-silver border-admin-silver/20"
                   : "text-admin-text-dim hover:text-admin-text hover:bg-admin-card border-transparent"
               )}
               style={{ animationDelay: `${i * 30}ms` }}
@@ -69,7 +69,7 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
       </nav>
 
       {/* Footer separator + version */}
-      <div className="gold-separator mb-3 mt-4" />
+      <div className="silver-separator mb-3 mt-4" />
       <p className="text-[10px] text-admin-muted text-center">
         FLN Transfer v1.0
       </p>

@@ -52,7 +52,7 @@ export default function FinanceiroPage() {
     const { data, error } = await supabase
       .from("rides")
       .select("*, client:clients(name), agency:agencies(name, commission_pct)")
-      .order("scheduled_at", { ascending: false }) as { data: Ride[] | null; error: any };
+      .order("scheduled_at", { ascending: false }) as { data: Ride[] | null; error: import('@supabase/supabase-js').PostgrestError | null };
     if (error) {
       toast.error("Erro ao carregar dados financeiros");
       return;
@@ -126,9 +126,9 @@ export default function FinanceiroPage() {
         <div className="stat-card !p-3 md:!p-5 overflow-hidden">
           <div className="flex items-center justify-between mb-1 md:mb-2">
             <p className="text-admin-muted text-[9px] md:text-xs uppercase tracking-widest leading-tight truncate">Receita</p>
-            <DollarSign className="w-3.5 h-3.5 md:w-4 md:h-4 text-admin-gold opacity-50 shrink-0" />
+            <DollarSign className="w-3.5 h-3.5 md:w-4 md:h-4 text-admin-silver opacity-50 shrink-0" />
           </div>
-          <p className="text-sm md:text-2xl font-black text-admin-gold truncate">{formatCurrency(totalRevenue)}</p>
+          <p className="text-sm md:text-2xl font-black text-admin-silver truncate">{formatCurrency(totalRevenue)}</p>
         </div>
         <div className="stat-card !p-3 md:!p-5 overflow-hidden">
           <div className="flex items-center justify-between mb-1 md:mb-2">
@@ -155,9 +155,9 @@ export default function FinanceiroPage() {
                 <p className="text-admin-muted text-[9px] md:text-xs uppercase tracking-widest leading-tight truncate mr-1">
                   {financialStatusLabels[s.status]}
                 </p>
-                <s.icon className="w-3.5 h-3.5 md:w-4 md:h-4 text-admin-gold opacity-50 shrink-0" />
+                <s.icon className="w-3.5 h-3.5 md:w-4 md:h-4 text-admin-silver opacity-50 shrink-0" />
               </div>
-              <p className="text-lg md:text-2xl font-black text-admin-gold">{s.count}</p>
+              <p className="text-lg md:text-2xl font-black text-admin-silver">{s.count}</p>
               <p className="text-[10px] md:text-[11px] text-admin-muted mt-1 truncate">{formatCurrency(s.total)}</p>
             </div>
           ))}
@@ -177,14 +177,14 @@ export default function FinanceiroPage() {
                   <p className="text-sm font-medium text-admin-text">{ride.client?.name ?? "—"}</p>
                   <p className="text-xs text-admin-muted">{formatDate(ride.scheduled_at)}</p>
                 </div>
-                <p className="text-sm font-bold text-admin-gold whitespace-nowrap">{formatCurrency(Number(ride.price))}</p>
+                <p className="text-sm font-bold text-admin-silver whitespace-nowrap">{formatCurrency(Number(ride.price))}</p>
               </div>
               <div>
                 <label className="text-[10px] text-admin-muted uppercase tracking-widest block mb-1">Status Financeiro</label>
                 <select
                   value={ride.financial_status ?? "pending"}
                   onChange={(e) => handleStatusChange(ride.id, e.target.value as FinancialStatus)}
-                  className="bg-admin-dark text-xs rounded-lg px-3 py-2 border border-admin-border text-admin-text focus:outline-none focus:border-admin-gold/50 w-full"
+                  className="bg-admin-dark text-xs rounded-lg px-3 py-2 border border-admin-border text-admin-text focus:outline-none focus:border-admin-silver/50 w-full"
                 >
                   {allStatuses.map((s) => (
                     <option key={s} value={s}>{financialStatusLabels[s]}</option>
@@ -197,19 +197,19 @@ export default function FinanceiroPage() {
       </div>
 
       {/* Desktop: table */}
-      <div className="hidden md:block bg-admin-card border border-admin-border rounded-xl overflow-hidden">
-        <div className="px-5 py-4 border-b border-admin-border">
+      <div className="hidden md:block admin-table-container">
+        <div className="px-5 py-4 border-b border-white/5 bg-white/[0.02]">
           <h3 className="text-sm font-semibold text-admin-text">Corridas ({rides.length})</h3>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="admin-table">
             <thead>
-              <tr className="border-b border-admin-border">
-                <th className="text-left px-4 py-2.5 text-admin-muted text-xs uppercase tracking-widest">ID</th>
-                <th className="text-left px-4 py-2.5 text-admin-muted text-xs uppercase tracking-widest">Cliente</th>
-                <th className="text-left px-4 py-2.5 text-admin-muted text-xs uppercase tracking-widest">Data</th>
-                <th className="text-right px-4 py-2.5 text-admin-muted text-xs uppercase tracking-widest">Valor</th>
-                <th className="text-left px-4 py-2.5 text-admin-muted text-xs uppercase tracking-widest">Status Financeiro</th>
+              <tr>
+                <th>ID</th>
+                <th>Cliente</th>
+                <th>Data</th>
+                <th className="text-right">Valor</th>
+                <th>Status Financeiro</th>
               </tr>
             </thead>
             <tbody>
@@ -219,16 +219,16 @@ export default function FinanceiroPage() {
                 </tr>
               ) : (
                 recentRides.map((ride) => (
-                  <tr key={ride.id} className="border-b border-admin-border/50 hover:bg-admin-card-hover transition">
-                    <td className="px-4 py-3 text-admin-text font-medium">{ride.id.slice(0, 8)}</td>
-                    <td className="px-4 py-3 text-admin-text-dim">{ride.client?.name ?? "—"}</td>
-                    <td className="px-4 py-3 text-admin-text-dim">{formatDate(ride.scheduled_at)}</td>
-                    <td className="px-4 py-3 text-right text-admin-gold font-bold">{formatCurrency(Number(ride.price))}</td>
-                    <td className="px-4 py-3">
+                  <tr key={ride.id}>
+                    <td className="text-admin-text font-medium">{ride.id.slice(0, 8)}</td>
+                    <td className="text-admin-text-dim">{ride.client?.name ?? "—"}</td>
+                    <td className="text-admin-text-dim">{formatDate(ride.scheduled_at)}</td>
+                    <td className="text-right text-admin-silver font-bold">{formatCurrency(Number(ride.price))}</td>
+                    <td>
                       <select
                         value={ride.financial_status ?? "pending"}
                         onChange={(e) => handleStatusChange(ride.id, e.target.value as FinancialStatus)}
-                        className="bg-transparent text-xs rounded-lg px-2 py-1 border border-admin-border text-admin-text focus:outline-none focus:border-admin-gold/50"
+                        className="bg-transparent text-xs rounded-lg px-2 py-1 border border-white/10 text-admin-text focus:outline-none focus:border-white/30"
                       >
                         {allStatuses.map((s) => (
                           <option key={s} value={s}>{financialStatusLabels[s]}</option>

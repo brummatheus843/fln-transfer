@@ -70,7 +70,7 @@ export function PeriodFilter({
             onClick={() => onPeriodChange(tab.key)}
             className={`text-[10px] px-3 py-1.5 rounded-full border uppercase tracking-widest font-medium transition whitespace-nowrap shrink-0 ${
               period === tab.key
-                ? "bg-admin-gold/10 text-admin-gold border-admin-gold/20"
+                ? "bg-admin-silver/10 text-admin-silver border-admin-silver/20"
                 : "text-admin-text-dim hover:text-admin-text hover:bg-admin-card border-transparent"
             }`}
           >

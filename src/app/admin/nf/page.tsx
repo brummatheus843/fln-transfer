@@ -113,52 +113,52 @@ export default function NFPage() {
           {/* Mobile: cards */}
           <div className="md:hidden space-y-3">
             {rides.map((ride) => (
-              <div key={ride.id} className="bg-admin-card border border-admin-border rounded-xl p-4 space-y-2">
+              <div key={ride.id} className="stat-card !p-4 space-y-3">
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <p className="text-sm font-medium text-admin-text">{ride.client?.name ?? "—"}</p>
-                    <p className="text-xs text-admin-muted">{formatDate(ride.scheduled_at)}</p>
+                    <p className="text-sm font-semibold text-admin-text">{ride.client?.name ?? "—"}</p>
+                    <p className="text-[10px] text-admin-muted uppercase tracking-wider">{formatDate(ride.scheduled_at)}</p>
                   </div>
-                  <p className="text-sm font-bold text-admin-gold whitespace-nowrap">{formatCurrency(Number(ride.price))}</p>
+                  <p className="text-sm font-bold text-admin-silver whitespace-nowrap">{formatCurrency(Number(ride.price))}</p>
                 </div>
-                <div className="flex items-center gap-1.5 text-xs text-admin-text-dim">
-                  <MapPin className="h-3 w-3 shrink-0 text-admin-muted" />
+                <div className="flex items-center gap-2 text-xs text-admin-text-dim pt-3 border-t border-white/5">
+                  <MapPin className="h-3.5 w-3.5 shrink-0 text-admin-muted" />
                   <span className="truncate">{ride.origin} → {ride.destination}</span>
                 </div>
-                <button onClick={() => generateNF(ride)} className="btn-admin text-xs w-full py-2 flex items-center justify-center gap-1.5">
-                  <FileText className="h-3.5 w-3.5" />
-                  Gerar NF
+                <button onClick={() => generateNF(ride)} className="btn-admin text-xs w-full py-2.5 flex items-center justify-center gap-2">
+                  <FileText className="h-4 w-4" />
+                  Gerar Nota Fiscal
                 </button>
               </div>
             ))}
           </div>
 
           {/* Desktop: table */}
-          <div className="hidden md:block bg-admin-card border border-admin-border rounded-xl overflow-hidden">
+          <div className="hidden md:block admin-table-container">
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="admin-table">
                 <thead>
-                  <tr className="border-b border-admin-border">
-                    <th className="text-left px-4 py-2.5 text-admin-muted text-xs uppercase tracking-widest">ID</th>
-                    <th className="text-left px-4 py-2.5 text-admin-muted text-xs uppercase tracking-widest">Data</th>
-                    <th className="text-left px-4 py-2.5 text-admin-muted text-xs uppercase tracking-widest">Cliente</th>
-                    <th className="text-left px-4 py-2.5 text-admin-muted text-xs uppercase tracking-widest">Origem</th>
-                    <th className="text-left px-4 py-2.5 text-admin-muted text-xs uppercase tracking-widest">Destino</th>
-                    <th className="text-left px-4 py-2.5 text-admin-muted text-xs uppercase tracking-widest">Valor</th>
-                    <th className="text-left px-4 py-2.5 text-admin-muted text-xs uppercase tracking-widest w-[120px]">Ações</th>
+                  <tr>
+                    <th>ID</th>
+                    <th>Data</th>
+                    <th>Cliente</th>
+                    <th>Origem</th>
+                    <th>Destino</th>
+                    <th>Valor</th>
+                    <th className="w-[120px]">Ações</th>
                   </tr>
                 </thead>
                 <tbody>
                   {rides.map((ride) => (
-                    <tr key={ride.id} className="border-b border-admin-border/50 hover:bg-admin-card-hover transition">
-                      <td className="px-4 py-3 text-admin-text font-medium">{ride.id.slice(0, 8)}</td>
-                      <td className="px-4 py-3 text-admin-text-dim">{formatDate(ride.scheduled_at)}</td>
-                      <td className="px-4 py-3 text-admin-text-dim">{ride.client?.name ?? "—"}</td>
-                      <td className="px-4 py-3 text-admin-text-dim">{ride.origin}</td>
-                      <td className="px-4 py-3 text-admin-text-dim">{ride.destination}</td>
-                      <td className="px-4 py-3 text-admin-gold font-bold">{formatCurrency(Number(ride.price))}</td>
-                      <td className="px-4 py-3">
-                        <button onClick={() => generateNF(ride)} className="btn-admin text-xs px-3 py-1.5 flex items-center gap-1.5">
+                    <tr key={ride.id}>
+                      <td className="text-admin-text font-medium">{ride.id.slice(0, 8)}</td>
+                      <td className="text-admin-text-dim">{formatDate(ride.scheduled_at)}</td>
+                      <td className="text-admin-text-dim">{ride.client?.name ?? "—"}</td>
+                      <td className="text-admin-text-dim">{ride.origin}</td>
+                      <td className="text-admin-text-dim">{ride.destination}</td>
+                      <td className="text-admin-silver font-bold">{formatCurrency(Number(ride.price))}</td>
+                      <td>
+                        <button onClick={() => generateNF(ride)} className="btn-admin text-[10px] px-3 py-1.5 flex items-center gap-1.5 uppercase tracking-wider font-bold">
                           <FileText className="h-3.5 w-3.5" />
                           Gerar NF
                         </button>

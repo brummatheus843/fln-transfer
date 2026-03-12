@@ -92,7 +92,7 @@ export default function DriverRideDetailPage() {
               <Phone className="h-4 w-4 text-admin-muted" />
               <a
                 href={`tel:${clientPhone.replace(/\D/g, "")}`}
-                className="text-admin-gold underline"
+                className="text-admin-silver underline"
               >
                 {clientPhone}
               </a>

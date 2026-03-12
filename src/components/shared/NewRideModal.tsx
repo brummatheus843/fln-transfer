@@ -7,7 +7,7 @@ import type { Agency } from "@/lib/types";
 import { Modal } from "./Modal";
 
 const inputClass =
-  "w-full bg-admin-card border border-admin-border rounded-lg px-3 py-2 text-sm text-admin-text focus:outline-none focus:border-admin-gold/50";
+  "w-full bg-admin-card border border-admin-border rounded-lg px-3 py-2 text-sm text-admin-text focus:outline-none focus:border-admin-silver/50";
 
 interface NewRideModalProps {
   open: boolean;

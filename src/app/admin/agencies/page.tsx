@@ -122,14 +122,14 @@ export default function AgenciesPage() {
               <p className="text-admin-muted text-center py-8">Nenhuma agência cadastrada.</p>
             ) : (
               agencies.map((agency) => (
-                <div key={agency.id} className="bg-admin-card border border-admin-border rounded-xl p-4">
-                  <div className="flex items-start justify-between gap-2 mb-2">
+                <div key={agency.id} className="stat-card !p-4">
+                  <div className="flex items-start justify-between gap-2 mb-3">
                     <div>
-                      <p className="font-medium text-admin-text text-sm">{agency.name}</p>
+                      <p className="font-semibold text-admin-text text-sm">{agency.name}</p>
                       {agency.contact_name && <p className="text-xs text-admin-muted">{agency.contact_name}</p>}
                     </div>
                     <div className="flex gap-1 shrink-0">
-                      <button className="p-1.5 rounded-lg text-admin-muted hover:text-admin-text hover:bg-admin-card-hover transition">
+                      <button className="p-1.5 rounded-lg text-admin-muted hover:text-admin-text hover:bg-white/5 transition">
                         <Pencil className="h-3.5 w-3.5" />
                       </button>
                       <button className="p-1.5 rounded-lg text-admin-muted hover:text-admin-red hover:bg-admin-red/10 transition" onClick={() => handleDelete(agency.id)}>
@@ -137,22 +137,22 @@ export default function AgenciesPage() {
                       </button>
                     </div>
                   </div>
-                  <div className="space-y-1 text-xs text-admin-text-dim">
+                  <div className="space-y-1.5 text-xs text-admin-text-dim pt-3 border-t border-white/5">
                     {agency.email && (
-                      <div className="flex items-center gap-1.5">
-                        <Mail className="h-3 w-3 text-admin-muted shrink-0" />
+                      <div className="flex items-center gap-2">
+                        <Mail className="h-3.5 w-3.5 text-admin-muted shrink-0" />
                         <span className="truncate">{agency.email}</span>
                       </div>
                     )}
                     {agency.phone && (
-                      <div className="flex items-center gap-1.5">
-                        <Phone className="h-3 w-3 text-admin-muted shrink-0" />
+                      <div className="flex items-center gap-2">
+                        <Phone className="h-3.5 w-3.5 text-admin-muted shrink-0" />
                         <span>{agency.phone}</span>
                       </div>
                     )}
-                    <div className="flex items-center gap-1.5">
-                      <Percent className="h-3 w-3 text-admin-gold shrink-0" />
-                      <span className="text-admin-gold font-bold">{agency.commission_pct}% comissão</span>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Percent className="h-3.5 w-3.5 text-admin-silver shrink-0" />
+                      <span className="text-admin-silver font-bold">{agency.commission_pct}% comissão</span>
                     </div>
                   </div>
                 </div>
@@ -161,40 +161,42 @@ export default function AgenciesPage() {
           </div>
 
           {/* Desktop: table */}
-          <div className="hidden md:block bg-admin-card border border-admin-border rounded-xl overflow-hidden">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-admin-border">
-                  <th className="text-left px-4 py-2.5 text-admin-muted text-xs uppercase tracking-widest">Nome</th>
-                  <th className="text-left px-4 py-2.5 text-admin-muted text-xs uppercase tracking-widest">Contato</th>
-                  <th className="text-left px-4 py-2.5 text-admin-muted text-xs uppercase tracking-widest">Email</th>
-                  <th className="text-left px-4 py-2.5 text-admin-muted text-xs uppercase tracking-widest">Telefone</th>
-                  <th className="text-left px-4 py-2.5 text-admin-muted text-xs uppercase tracking-widest">Comissão%</th>
-                  <th className="text-left px-4 py-2.5 text-admin-muted text-xs uppercase tracking-widest w-[100px]">Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                {agencies.map((agency) => (
-                  <tr key={agency.id} className="border-b border-admin-border/50 hover:bg-admin-card-hover transition">
-                    <td className="px-4 py-3 text-admin-text font-medium">{agency.name}</td>
-                    <td className="px-4 py-3 text-admin-text-dim">{agency.contact_name}</td>
-                    <td className="px-4 py-3 text-admin-text-dim">{agency.email}</td>
-                    <td className="px-4 py-3 text-admin-text-dim">{agency.phone}</td>
-                    <td className="px-4 py-3 text-admin-gold font-bold">{agency.commission_pct}%</td>
-                    <td className="px-4 py-3">
-                      <div className="flex gap-1">
-                        <button className="p-1.5 rounded-lg text-admin-muted hover:text-admin-text hover:bg-admin-card-hover transition">
-                          <Pencil className="h-4 w-4" />
-                        </button>
-                        <button className="p-1.5 rounded-lg text-admin-muted hover:text-admin-red hover:bg-admin-red/10 transition" onClick={() => handleDelete(agency.id)}>
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </td>
+          <div className="hidden md:block admin-table-container">
+            <div className="overflow-x-auto">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>Nome</th>
+                    <th>Contato</th>
+                    <th>Email</th>
+                    <th>Telefone</th>
+                    <th>Comissão%</th>
+                    <th className="w-[100px]">Ações</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {agencies.map((agency) => (
+                    <tr key={agency.id}>
+                      <td className="text-admin-text font-medium">{agency.name}</td>
+                      <td className="text-admin-text-dim">{agency.contact_name}</td>
+                      <td className="text-admin-text-dim">{agency.email}</td>
+                      <td className="text-admin-text-dim">{agency.phone}</td>
+                      <td className="text-admin-silver font-bold">{agency.commission_pct}%</td>
+                      <td>
+                        <div className="flex gap-1">
+                          <button className="p-1.5 rounded-lg text-admin-muted hover:text-admin-text hover:bg-white/5 transition">
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                          <button className="p-1.5 rounded-lg text-admin-muted hover:text-admin-red hover:bg-admin-red/10 transition" onClick={() => handleDelete(agency.id)}>
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </>
       )}

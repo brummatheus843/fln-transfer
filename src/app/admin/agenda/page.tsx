@@ -97,17 +97,17 @@ function MobileAgenda({
               onClick={() => onSelectDate(day)}
               className={`flex flex-col items-center py-2 rounded-xl transition text-center ${
                 isSelected
-                  ? "bg-admin-gold/15 border border-admin-gold/30"
+                  ? "bg-admin-silver/15 border border-admin-silver/30"
                   : isToday
                   ? "bg-admin-card border border-admin-border"
                   : "border border-transparent hover:bg-admin-card"
               }`}
             >
               <span className="text-[10px] text-admin-muted uppercase">{WEEKDAYS[day.getDay()]}</span>
-              <span className={`text-sm font-bold mt-0.5 ${isSelected ? "text-admin-gold" : isToday ? "text-admin-text" : "text-admin-text-dim"}`}>
+              <span className={`text-sm font-bold mt-0.5 ${isSelected ? "text-admin-silver" : isToday ? "text-admin-text" : "text-admin-text-dim"}`}>
                 {day.getDate()}
               </span>
-              {hasRides && <span className={`w-1.5 h-1.5 rounded-full mt-1 ${isSelected ? "bg-admin-gold" : "bg-admin-muted"}`} />}
+              {hasRides && <span className={`w-1.5 h-1.5 rounded-full mt-1 ${isSelected ? "bg-admin-silver" : "bg-admin-muted"}`} />}
             </button>
           );
         })}
@@ -129,8 +129,8 @@ function MobileAgenda({
               <div className="flex items-start justify-between gap-2">
                 <div className="flex items-center gap-2 min-w-0">
                   <div className="flex items-center gap-1 shrink-0">
-                    <Clock className="h-3.5 w-3.5 text-admin-gold" />
-                    <span className="text-sm font-bold text-admin-gold">{format(new Date(ride.scheduled_at), "HH:mm")}</span>
+                    <Clock className="h-3.5 w-3.5 text-admin-silver" />
+                    <span className="text-sm font-bold text-admin-silver">{format(new Date(ride.scheduled_at), "HH:mm")}</span>
                   </div>
                   <span className="text-sm font-medium text-admin-text truncate">{ride.client?.name ?? "—"}</span>
                 </div>
@@ -148,7 +148,7 @@ function MobileAgenda({
                   <span>{ride.pax_count} pax</span>
                 </div>
                 {Number(ride.price) > 0 && (
-                  <span className="font-bold text-admin-gold">{formatCurrency(Number(ride.price), ride.currency)}</span>
+                  <span className="font-bold text-admin-silver">{formatCurrency(Number(ride.price), ride.currency)}</span>
                 )}
               </div>
             </div>

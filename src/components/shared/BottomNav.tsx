@@ -61,7 +61,7 @@ export function BottomNav() {
                   className={cn(
                     "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
                     active
-                      ? "bg-admin-gold/10 text-admin-gold"
+                      ? "bg-admin-silver/10 text-admin-silver"
                       : "text-admin-text-dim hover:text-admin-text hover:bg-admin-card"
                   )}
                 >
@@ -85,7 +85,7 @@ export function BottomNav() {
               href={tab.href}
               className={cn(
                 "flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] transition-colors",
-                active ? "text-admin-gold" : "text-admin-muted"
+                active ? "text-admin-silver" : "text-admin-muted"
               )}
             >
               <Icon className="h-5 w-5" />
@@ -97,7 +97,7 @@ export function BottomNav() {
           onClick={() => setShowMore(!showMore)}
           className={cn(
             "flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] transition-colors",
-            moreActive ? "text-admin-gold" : "text-admin-muted"
+            moreActive ? "text-admin-silver" : "text-admin-muted"
           )}
         >
           <MoreHorizontal className="h-5 w-5" />

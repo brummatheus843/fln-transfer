@@ -136,28 +136,28 @@ export default function ReportsPage() {
               <span className="text-admin-muted text-[10px] md:text-xs uppercase tracking-widest leading-tight">Total Corridas</span>
               <Car className="h-4 w-4 text-admin-muted shrink-0" />
             </div>
-            <div className="text-xl md:text-2xl font-black text-admin-gold">{totalRides}</div>
+            <div className="text-xl md:text-2xl font-black text-admin-silver">{totalRides}</div>
           </div>
           <div className="stat-card animate-count-up">
             <div className="flex items-center justify-between mb-2">
               <span className="text-admin-muted text-[10px] md:text-xs uppercase tracking-widest leading-tight">Receita</span>
               <DollarSign className="h-4 w-4 text-admin-muted shrink-0" />
             </div>
-            <div className="text-lg md:text-2xl font-black text-admin-gold">{formatCurrency(totalRevenue)}</div>
+            <div className="text-lg md:text-2xl font-black text-admin-silver">{formatCurrency(totalRevenue)}</div>
           </div>
           <div className="stat-card animate-count-up">
             <div className="flex items-center justify-between mb-2">
               <span className="text-admin-muted text-[10px] md:text-xs uppercase tracking-widest leading-tight">Ticket Médio</span>
               <Receipt className="h-4 w-4 text-admin-muted shrink-0" />
             </div>
-            <div className="text-lg md:text-2xl font-black text-admin-gold">{formatCurrency(avgTicket)}</div>
+            <div className="text-lg md:text-2xl font-black text-admin-silver">{formatCurrency(avgTicket)}</div>
           </div>
           <div className="stat-card animate-count-up">
             <div className="flex items-center justify-between mb-2">
               <span className="text-admin-muted text-[10px] md:text-xs uppercase tracking-widest leading-tight">Comissões</span>
               <Percent className="h-4 w-4 text-admin-muted shrink-0" />
             </div>
-            <div className="text-lg md:text-2xl font-black text-admin-gold">{formatCurrency(totalCommissions)}</div>
+            <div className="text-lg md:text-2xl font-black text-admin-silver">{formatCurrency(totalCommissions)}</div>
           </div>
         </div>
       )}

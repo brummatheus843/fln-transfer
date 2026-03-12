@@ -32,23 +32,23 @@ export function Modal({ open, onClose, title, children, maxWidth = "max-w-md" }:
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
-      style={{ background: "rgba(0,0,0,0.75)" }}
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 backdrop-blur-sm bg-black/40"
       onClick={onClose}
     >
       <div
         ref={ref}
-        className={`bg-admin-dark border border-admin-border rounded-2xl w-full ${maxWidth} max-h-[85vh] overflow-y-auto p-5 md:p-6`}
-        style={{ animation: "modal-in 0.2s ease-out" }}
+        className={`liquid-glass rounded-3xl w-full ${maxWidth} max-h-[90vh] overflow-y-auto p-6 md:p-8 animate-fade-in`}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-bold text-admin-text">{title}</h3>
-          <button onClick={onClose} className="text-admin-muted hover:text-admin-text p-1 transition">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-xl font-bold text-admin-text tracking-tight">{title}</h3>
+          <button onClick={onClose} className="text-admin-muted hover:text-admin-text p-1.5 hover:bg-white/5 rounded-full transition">
             <X className="w-5 h-5" />
           </button>
         </div>
-        {children}
+        <div className="relative z-10">
+          {children}
+        </div>
       </div>
     </div>,
     document.body

@@ -35,7 +35,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-admin-black flex items-center justify-center p-4 animate-fade-in">
       <div className="bg-admin-card border border-admin-border rounded-2xl w-full max-w-sm p-8">
-        <h1 className="shimmer-gold text-2xl font-black tracking-tight text-center mb-1">
+        <h1 className="shimmer-silver text-2xl font-black tracking-tight text-center mb-1">
           FLN Transfer
         </h1>
         <p className="text-admin-muted text-xs text-center uppercase tracking-widest mb-6">

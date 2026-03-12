@@ -40,7 +40,7 @@ export function Header() {
         >
           <Menu className="h-5 w-5" />
         </button>
-        <h1 className="text-lg font-black shimmer-gold tracking-tight">
+        <h1 className="text-lg font-black shimmer-silver tracking-tight">
           FLN TRANSFER
         </h1>
         <button

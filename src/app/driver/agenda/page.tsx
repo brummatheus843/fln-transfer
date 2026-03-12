@@ -16,7 +16,7 @@ function RideCard({ ride }: { ride: Ride }) {
   return (
     <div className="bg-admin-card border border-admin-border rounded-xl p-4 space-y-2">
       <div className="flex items-center justify-between">
-        <span className="text-lg font-semibold text-admin-gold">
+        <span className="text-lg font-semibold text-admin-silver">
           {formatTime(ride.scheduled_at)}
         </span>
         <span

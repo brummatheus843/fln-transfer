@@ -4,44 +4,44 @@
 
 @layer base {
   :root {
-    --admin-black: #0a0a0a;
-    --admin-dark: #111111;
-    --admin-card: #1a1a1a;
-    --admin-card-hover: #222222;
-    --admin-border: #2a2a2a;
-    --admin-border-light: #333333;
-    --admin-gold: #d4a843;
-    --admin-gold-light: #e8c56d;
-    --admin-gold-dim: #8b7230;
+    --admin-black: #050505;
+    --admin-dark: #0a0a0a;
+    --admin-card: rgba(255, 255, 255, 0.04);
+    --admin-card-hover: rgba(255, 255, 255, 0.08);
+    --admin-border: rgba(255, 255, 255, 0.1);
+    --admin-border-light: rgba(255, 255, 255, 0.15);
+    --admin-silver: #9ca3af;
+    --admin-silver-light: #f3f4f6;
+    --admin-silver-dim: #4b5563;
     --admin-green: #22c55e;
     --admin-red: #ef4444;
     --admin-blue: #3b82f6;
     --admin-orange: #f59e0b;
     --admin-purple: #a855f7;
-    --admin-text: #e0e0e0;
-    --admin-text-dim: #999999;
-    --admin-muted: #6b6b6b;
+    --admin-text: #f9fafb;
+    --admin-text-dim: #9ca3af;
+    --admin-muted: #6b7280;
 
-    --background: 0 0% 4%;
-    --foreground: 0 0% 88%;
-    --card: 0 0% 10%;
-    --card-foreground: 0 0% 88%;
-    --popover: 0 0% 7%;
-    --popover-foreground: 0 0% 88%;
-    --primary: 41 60% 55%;
-    --primary-foreground: 0 0% 4%;
-    --secondary: 0 0% 13%;
-    --secondary-foreground: 0 0% 88%;
-    --muted: 0 0% 13%;
-    --muted-foreground: 0 0% 42%;
-    --accent: 0 0% 13%;
-    --accent-foreground: 0 0% 88%;
+    --background: 0 0% 2%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 4%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 3%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 215 16% 47%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 0 0% 9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 9%;
+    --muted-foreground: 0 0% 45%;
+    --accent: 0 0% 9%;
+    --accent-foreground: 0 0% 98%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 16%;
-    --input: 0 0% 16%;
-    --ring: 41 60% 55%;
-    --radius: 0.75rem;
+    --border: 0 0% 12%;
+    --input: 0 0% 12%;
+    --ring: 215 16% 47%;
+    --radius: 1rem;
   }
 
   * {
@@ -50,39 +50,46 @@
 
   body {
     @apply bg-admin-black text-admin-text antialiased;
+    background: radial-gradient(circle at 50% 0%, #1a1a1a 0%, #050505 100%);
   }
 }
 
 @layer components {
   .stat-card {
-    @apply bg-admin-card border border-admin-border rounded-xl p-5 transition-all duration-200;
+    @apply liquid-glass rounded-2xl p-5;
   }
   .stat-card:hover {
-    border-color: rgba(212, 168, 67, 0.2);
-    box-shadow: 0 0 20px rgba(212, 168, 67, 0.05);
+    @apply bg-white/5 border-white/20;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 0 1px 1px rgba(255, 255, 255, 0.1);
   }
 
   .admin-input {
-    @apply bg-admin-dark border border-admin-border rounded-lg px-4 py-2 text-sm text-admin-text placeholder:text-admin-muted focus:outline-none transition-colors;
+    @apply bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-admin-text placeholder:text-admin-muted focus:outline-none transition-all;
+    backdrop-filter: blur(8px);
   }
   .admin-input:focus {
-    border-color: rgba(212, 168, 67, 0.4);
+    @apply border-white/30 bg-black/60 ring-1 ring-white/10;
   }
 
   .btn-admin {
-    @apply font-bold text-admin-black px-4 py-2 rounded-lg transition-all duration-200;
-    background: linear-gradient(135deg, #d4a843 0%, #b8912e 100%);
+    @apply font-semibold text-admin-black px-5 py-2.5 rounded-xl transition-all duration-300;
+    background: linear-gradient(135deg, #f3f4f6 0%, #9ca3af 100%);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   }
   .btn-admin:hover {
-    background: linear-gradient(135deg, #e8c56d 0%, #d4a843 100%);
-    box-shadow: 0 0 16px rgba(212, 168, 67, 0.4);
+    background: linear-gradient(135deg, #ffffff 0%, #f3f4f6 100%);
+    box-shadow: 0 6px 20px rgba(156, 163, 175, 0.3);
+    transform: translateY(-1px);
+  }
+  .btn-admin:active {
+    transform: translateY(0);
   }
   .btn-admin:disabled {
-    @apply opacity-40 cursor-not-allowed;
+    @apply opacity-40 cursor-not-allowed grayscale;
   }
 
-  .shimmer-gold {
-    background: linear-gradient(90deg, #d4a843 0%, #e8c56d 40%, #d4a843 60%, #8b7230 100%);
+  .shimmer-silver {
+    background: linear-gradient(90deg, #9ca3af 0%, #f3f4f6 40%, #9ca3af 60%, #4b5563 100%);
     background-size: 200% 100%;
     animation: shimmer 3s linear infinite;
     -webkit-background-clip: text;
@@ -91,17 +98,42 @@
   }
 
   .liquid-glass {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.03) 50%, rgba(255, 255, 255, 0.06) 100%);
-    backdrop-filter: blur(20px) saturate(1.4);
-    -webkit-backdrop-filter: blur(20px) saturate(1.4);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1), inset 0 -1px 0 rgba(0, 0, 0, 0.15);
-    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.05);
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
-  .gold-separator {
+  .silver-separator {
     @apply h-px;
-    background: linear-gradient(to right, rgba(212, 168, 67, 0.4), rgba(212, 168, 67, 0.1), transparent);
+    background: linear-gradient(to right, rgba(156, 163, 175, 0.2), rgba(156, 163, 175, 0.05), transparent);
+  }
+
+  /* Tables in iOS 26 style */
+  .admin-table-container {
+    @apply liquid-glass rounded-2xl overflow-hidden;
+  }
+
+  .admin-table {
+    @apply w-full border-collapse;
+  }
+
+  .admin-table th {
+    @apply text-left px-4 py-4 text-[10px] uppercase tracking-widest text-admin-muted font-medium border-b border-white/5 bg-white/[0.02];
+  }
+
+  .admin-table td {
+    @apply px-4 py-4 text-sm border-b border-white/5 transition-colors;
+  }
+
+  .admin-table tr:hover td {
+    @apply bg-white/[0.02];
+  }
+
+  .admin-table tr:last-child td {
+    @apply border-b-0;
   }
 }
 
@@ -111,43 +143,47 @@
 }
 
 @keyframes fade-in {
-  from { opacity: 0; transform: translateY(8px); }
+  from { opacity: 0; transform: translateY(12px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes slide-in {
-  from { opacity: 0; transform: translateX(-12px); }
+  from { opacity: 0; transform: translateX(-16px); }
   to { opacity: 1; transform: translateX(0); }
 }
 
 @keyframes count-up {
-  from { opacity: 0; transform: scale(0.8); }
+  from { opacity: 0; transform: scale(0.9); }
   to { opacity: 1; transform: scale(1); }
 }
 
 .animate-fade-in {
-  animation: fade-in 0.4s ease-out both;
+  animation: fade-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .animate-slide-in {
-  animation: slide-in 0.3s ease-out both;
+  animation: slide-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .animate-count-up {
-  animation: count-up 0.5s ease-out both;
+  animation: count-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 @keyframes modal-in {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
+  from { opacity: 0; transform: scale(0.92) translateY(10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
 }
 
 /* Scrollbar */
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: #111111; }
-::-webkit-scrollbar-thumb { background: #333333; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #444444; }
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
 
 /* Hide scrollbar utility */
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+.glass-pill {
+  @apply px-3 py-1 rounded-full text-xs font-medium border border-white/10 bg-white/5 backdrop-blur-md;
+}
