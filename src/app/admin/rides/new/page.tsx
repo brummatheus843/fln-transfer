@@ -57,7 +57,6 @@ export default function NewRidePage() {
       currency: form.currency,
       notes: form.notes || null,
       status: "scheduled",
-      financial_status: "pending",
     });
     if (error) {
       toast.error("Erro ao criar corrida");

@@ -19,7 +19,6 @@ export async function POST(request: NextRequest) {
     .insert({
       ...body,
       status: body.status ?? "scheduled",
-      financial_status: body.financial_status ?? "pending",
     })
     .select()
     .single();

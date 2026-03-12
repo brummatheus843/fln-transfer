@@ -52,7 +52,7 @@ export default function FinanceiroPage() {
     const { data, error } = await supabase
       .from("rides")
       .select("*, client:clients(name), agency:agencies(name, commission_pct)")
-      .order("scheduled_at", { ascending: false });
+      .order("scheduled_at", { ascending: false }) as { data: Ride[] | null; error: any };
     if (error) {
       toast.error("Erro ao carregar dados financeiros");
       return;
@@ -122,44 +122,46 @@ export default function FinanceiroPage() {
       />
 
       {/* Summary cards */}
-      <div className="grid grid-cols-3 gap-3 mb-4">
-        <div className="stat-card animate-count-up">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-admin-muted text-[10px] md:text-xs uppercase tracking-widest leading-tight">Receita Total</p>
-            <DollarSign className="w-4 h-4 text-admin-gold opacity-50 shrink-0" />
+      <div className="grid grid-cols-3 gap-2 md:gap-3 mb-4">
+        <div className="stat-card !p-3 md:!p-5 overflow-hidden">
+          <div className="flex items-center justify-between mb-1 md:mb-2">
+            <p className="text-admin-muted text-[9px] md:text-xs uppercase tracking-widest leading-tight truncate">Receita</p>
+            <DollarSign className="w-3.5 h-3.5 md:w-4 md:h-4 text-admin-gold opacity-50 shrink-0" />
           </div>
-          <p className="text-lg md:text-2xl font-black text-admin-gold">{formatCurrency(totalRevenue)}</p>
+          <p className="text-sm md:text-2xl font-black text-admin-gold truncate">{formatCurrency(totalRevenue)}</p>
         </div>
-        <div className="stat-card animate-count-up">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-admin-muted text-[10px] md:text-xs uppercase tracking-widest leading-tight">Comissões</p>
-            <Percent className="w-4 h-4 text-admin-red opacity-50 shrink-0" />
+        <div className="stat-card !p-3 md:!p-5 overflow-hidden">
+          <div className="flex items-center justify-between mb-1 md:mb-2">
+            <p className="text-admin-muted text-[9px] md:text-xs uppercase tracking-widest leading-tight truncate">Comissões</p>
+            <Percent className="w-3.5 h-3.5 md:w-4 md:h-4 text-admin-red opacity-50 shrink-0" />
           </div>
-          <p className="text-lg md:text-2xl font-black text-admin-red">{formatCurrency(totalCommissions)}</p>
+          <p className="text-sm md:text-2xl font-black text-admin-red truncate">{formatCurrency(totalCommissions)}</p>
         </div>
-        <div className="stat-card animate-count-up">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-admin-muted text-[10px] md:text-xs uppercase tracking-widest leading-tight">Receita Líq.</p>
-            <DollarSign className="w-4 h-4 text-admin-green opacity-50 shrink-0" />
+        <div className="stat-card !p-3 md:!p-5 overflow-hidden">
+          <div className="flex items-center justify-between mb-1 md:mb-2">
+            <p className="text-admin-muted text-[9px] md:text-xs uppercase tracking-widest leading-tight truncate">Líquido</p>
+            <DollarSign className="w-3.5 h-3.5 md:w-4 md:h-4 text-admin-green opacity-50 shrink-0" />
           </div>
-          <p className="text-lg md:text-2xl font-black text-admin-green">{formatCurrency(netRevenue)}</p>
+          <p className="text-sm md:text-2xl font-black text-admin-green truncate">{formatCurrency(netRevenue)}</p>
         </div>
       </div>
 
-      {/* Status cards */}
-      <div className="flex md:grid md:grid-cols-4 gap-3 md:gap-4 mb-6 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
-        {statCards.map((s) => (
-          <div key={s.status} className="stat-card animate-count-up min-w-[140px] shrink-0 md:min-w-0">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-admin-muted text-[10px] md:text-xs uppercase tracking-widest leading-tight">
-                {financialStatusLabels[s.status]}
-              </p>
-              <s.icon className="w-4 h-4 text-admin-gold opacity-50 shrink-0 ml-1" />
+      {/* Status cards — scroll horizontal no mobile */}
+      <div className="overflow-x-auto pb-2 mb-6 scrollbar-hide">
+        <div className="flex md:grid md:grid-cols-4 gap-2 md:gap-4 min-w-0">
+          {statCards.map((s) => (
+            <div key={s.status} className="stat-card !p-3 md:!p-5 min-w-[120px] md:min-w-0 shrink-0 overflow-hidden">
+              <div className="flex items-center justify-between mb-1 md:mb-2">
+                <p className="text-admin-muted text-[9px] md:text-xs uppercase tracking-widest leading-tight truncate mr-1">
+                  {financialStatusLabels[s.status]}
+                </p>
+                <s.icon className="w-3.5 h-3.5 md:w-4 md:h-4 text-admin-gold opacity-50 shrink-0" />
+              </div>
+              <p className="text-lg md:text-2xl font-black text-admin-gold">{s.count}</p>
+              <p className="text-[10px] md:text-[11px] text-admin-muted mt-1 truncate">{formatCurrency(s.total)}</p>
             </div>
-            <p className="text-xl md:text-2xl font-black text-admin-gold">{s.count}</p>
-            <p className="text-[11px] text-admin-muted mt-1">{formatCurrency(s.total)}</p>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
       {/* Mobile: card list */}

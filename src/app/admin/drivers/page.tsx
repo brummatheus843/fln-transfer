@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, X, Phone, Car } from "lucide-react";
+import { Plus, Pencil, Trash2, Phone, Car } from "lucide-react";
+import { Modal } from "@/components/shared/Modal";
 import { createClient } from "@/lib/supabase/client";
 import type { Driver } from "@/lib/types";
 
@@ -76,54 +77,43 @@ export default function DriversPage() {
         </button>
       </div>
 
-      {/* Modal */}
-      {open && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 animate-fade-in" onClick={() => setOpen(false)}>
-          <div className="bg-admin-card border border-admin-border rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="px-5 pt-5 pb-3 border-b border-admin-border flex items-center justify-between ">
-              <h3 className="text-lg font-bold text-admin-text">Novo Motorista</h3>
-              <button onClick={() => setOpen(false)} className="text-admin-muted hover:text-admin-text transition p-1">
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <form onSubmit={handleSubmit} className="p-5 space-y-3">
-              <div>
-                <label className="text-[10px] text-admin-muted uppercase tracking-widest mb-1.5 block">Nome</label>
-                <input className="admin-input w-full" required value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} />
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[10px] text-admin-muted uppercase tracking-widest mb-1.5 block">Telefone</label>
-                  <input className="admin-input w-full" required value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
-                </div>
-                <div>
-                  <label className="text-[10px] text-admin-muted uppercase tracking-widest mb-1.5 block">Placa</label>
-                  <input className="admin-input w-full" required value={form.license_plate} onChange={(e) => setForm({ ...form, license_plate: e.target.value })} />
-                </div>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[10px] text-admin-muted uppercase tracking-widest mb-1.5 block">Veículo</label>
-                  <input className="admin-input w-full" required value={form.vehicle_model} onChange={(e) => setForm({ ...form, vehicle_model: e.target.value })} />
-                </div>
-                <div>
-                  <label className="text-[10px] text-admin-muted uppercase tracking-widest mb-1.5 block">Status</label>
-                  <select className="admin-input w-full" value={form.active ? "active" : "inactive"} onChange={(e) => setForm({ ...form, active: e.target.value === "active" })}>
-                    <option value="active">Ativo</option>
-                    <option value="inactive">Inativo</option>
-                  </select>
-                </div>
-              </div>
-              <div className="flex gap-2 pt-2">
-                <button type="button" onClick={() => setOpen(false)} className="flex-1 bg-admin-card border border-admin-border text-admin-text-dim hover:text-admin-text hover:bg-admin-card-hover rounded-lg px-4 py-2.5 text-sm transition">
-                  Cancelar
-                </button>
-                <button type="submit" className="flex-1 btn-admin py-2.5">Salvar</button>
-              </div>
-            </form>
+      <Modal open={open} onClose={() => setOpen(false)} title="Novo Motorista">
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <div>
+            <label className="text-[10px] text-admin-muted uppercase tracking-widest mb-1.5 block">Nome</label>
+            <input className="admin-input w-full" required value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} />
           </div>
-        </div>
-      )}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="text-[10px] text-admin-muted uppercase tracking-widest mb-1.5 block">Telefone</label>
+              <input className="admin-input w-full" required value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+            </div>
+            <div>
+              <label className="text-[10px] text-admin-muted uppercase tracking-widest mb-1.5 block">Placa</label>
+              <input className="admin-input w-full" required value={form.license_plate} onChange={(e) => setForm({ ...form, license_plate: e.target.value })} />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="text-[10px] text-admin-muted uppercase tracking-widest mb-1.5 block">Veículo</label>
+              <input className="admin-input w-full" required value={form.vehicle_model} onChange={(e) => setForm({ ...form, vehicle_model: e.target.value })} />
+            </div>
+            <div>
+              <label className="text-[10px] text-admin-muted uppercase tracking-widest mb-1.5 block">Status</label>
+              <select className="admin-input w-full" value={form.active ? "active" : "inactive"} onChange={(e) => setForm({ ...form, active: e.target.value === "active" })}>
+                <option value="active">Ativo</option>
+                <option value="inactive">Inativo</option>
+              </select>
+            </div>
+          </div>
+          <div className="flex gap-2 pt-2">
+            <button type="button" onClick={() => setOpen(false)} className="flex-1 bg-admin-card border border-admin-border text-admin-text-dim hover:text-admin-text hover:bg-admin-card-hover rounded-lg px-4 py-2.5 text-sm transition">
+              Cancelar
+            </button>
+            <button type="submit" className="flex-1 btn-admin py-2.5">Salvar</button>
+          </div>
+        </form>
+      </Modal>
 
       {loading ? (
         <p className="text-admin-muted text-center py-8">Carregando...</p>

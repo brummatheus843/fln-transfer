@@ -8,7 +8,7 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-admin-black text-admin-text md:flex">
+    <div className="min-h-screen bg-admin-black text-admin-text md:flex overflow-x-hidden">
       {/* Desktop sidebar */}
       <div className="hidden md:block">
         <div className="fixed inset-y-0 left-0 w-64">
