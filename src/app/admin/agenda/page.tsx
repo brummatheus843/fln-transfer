@@ -1,12 +1,15 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Calendar, dateFnsLocalizer } from "react-big-calendar";
 import { format, parse, startOfWeek, getDay } from "date-fns";
 import { ptBR } from "date-fns/locale/pt-BR";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import { Plus, X, UserPlus } from "lucide-react";
+import { toast } from "sonner";
 import type { RideStatus } from "@/lib/formatters";
+import { createClient } from "@/lib/supabase/client";
+import type { Client } from "@/lib/types";
 
 const locales = { "pt-BR": ptBR };
 
@@ -32,10 +35,6 @@ const statusBorderColors: Record<RideStatus, string> = {
   cancelled: "rgba(239,68,68,0.5)",
 };
 
-const now = new Date();
-const y = now.getFullYear();
-const m = now.getMonth();
-
 type CalendarEvent = {
   title: string;
   start: Date;
@@ -43,29 +42,14 @@ type CalendarEvent = {
   status: RideStatus;
 };
 
-const initialEvents: CalendarEvent[] = [
-  { title: "Carlos Mendes - Aeroporto → Hotel", start: new Date(y, m, 3, 9, 0), end: new Date(y, m, 3, 10, 0), status: "completed" },
-  { title: "Ana Silva - Hotel → Centro", start: new Date(y, m, 7, 14, 0), end: new Date(y, m, 7, 15, 0), status: "scheduled" },
-  { title: "Roberto Lima - Praia → Aeroporto", start: new Date(y, m, 12, 8, 30), end: new Date(y, m, 12, 9, 30), status: "in_progress" },
-  { title: "Juliana Costa - Aeroporto → Resort", start: new Date(y, m, 18, 16, 0), end: new Date(y, m, 18, 17, 30), status: "scheduled" },
-  { title: "Pedro Alves - Hotel → Aeroporto", start: new Date(y, m, 25, 11, 0), end: new Date(y, m, 25, 12, 0), status: "cancelled" },
-];
-
-const mockClients = [
-  { id: "1", name: "Carlos Mendes" },
-  { id: "2", name: "Ana Silva" },
-  { id: "3", name: "Roberto Lima" },
-  { id: "4", name: "Juliana Costa" },
-  { id: "5", name: "Pedro Alves" },
-];
-
 export default function AgendaPage() {
-  const [events, setEvents] = useState<CalendarEvent[]>(initialEvents);
+  const supabase = createClient();
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [showRideModal, setShowRideModal] = useState(false);
   const [showClientModal, setShowClientModal] = useState(false);
-  const [clients, setClients] = useState(mockClients);
+  const [clients, setClients] = useState<Pick<Client, "id" | "name">[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // New ride form
   const [rideForm, setRideForm] = useState({
     client_id: "",
     origin: "",
@@ -76,36 +60,77 @@ export default function AgendaPage() {
     notes: "",
   });
 
-  // New client form
   const [clientForm, setClientForm] = useState({ name: "", phone: "" });
 
-  const handleCreateRide = useCallback(() => {
-    if (!rideForm.client_id || !rideForm.origin || !rideForm.destination || !rideForm.date || !rideForm.time) return;
-    const client = clients.find((c) => c.id === rideForm.client_id);
-    const [hours, minutes] = rideForm.time.split(":").map(Number);
-    const start = new Date(rideForm.date);
-    start.setHours(hours, minutes);
-    const end = new Date(start);
-    end.setHours(end.getHours() + 1);
-
-    setEvents((prev) => [
-      ...prev,
-      {
-        title: `${client?.name} - ${rideForm.origin} → ${rideForm.destination}`,
+  async function fetchData() {
+    const [ridesRes, clientsRes] = await Promise.all([
+      supabase.from("rides").select("*, client:clients(name)").order("scheduled_at"),
+      supabase.from("clients").select("id, name").order("name"),
+    ]);
+    if (ridesRes.error) {
+      toast.error("Erro ao carregar agenda");
+      return;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const calEvents: CalendarEvent[] = (ridesRes.data ?? []).map((r: any) => {
+      const start = new Date(r.scheduled_at);
+      const end = new Date(start);
+      end.setHours(end.getHours() + 1);
+      return {
+        title: `${r.client?.name ?? "—"} - ${r.origin} → ${r.destination}`,
         start,
         end,
-        status: "scheduled" as RideStatus,
-      },
-    ]);
+        status: r.status as RideStatus,
+      };
+    });
+    setEvents(calEvents);
+    setClients(clientsRes.data ?? []);
+    setLoading(false);
+  }
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const handleCreateRide = useCallback(async () => {
+    if (!rideForm.client_id || !rideForm.origin || !rideForm.destination || !rideForm.date || !rideForm.time) return;
+    const scheduled_at = `${rideForm.date}T${rideForm.time}:00`;
+    const { error } = await supabase.from("rides").insert({
+      client_id: rideForm.client_id,
+      origin: rideForm.origin,
+      destination: rideForm.destination,
+      scheduled_at,
+      price: Number(rideForm.price) || 0,
+      notes: rideForm.notes || null,
+      status: "scheduled",
+      financial_status: "pending",
+      pax_count: 1,
+      currency: "BRL",
+    });
+    if (error) {
+      toast.error("Erro ao criar corrida");
+      return;
+    }
+    toast.success("Corrida criada!");
     setRideForm({ client_id: "", origin: "", destination: "", date: "", time: "", price: "", notes: "" });
     setShowRideModal(false);
-  }, [rideForm, clients]);
+    fetchData();
+  }, [rideForm]);
 
-  const handleCreateClient = useCallback(() => {
+  const handleCreateClient = useCallback(async () => {
     if (!clientForm.name) return;
-    const newClient = { id: String(Date.now()), name: clientForm.name };
-    setClients((prev) => [...prev, newClient]);
-    setRideForm((prev) => ({ ...prev, client_id: newClient.id }));
+    const { data, error } = await supabase
+      .from("clients")
+      .insert({ name: clientForm.name, phone: clientForm.phone || null })
+      .select("id, name")
+      .single();
+    if (error) {
+      toast.error("Erro ao criar cliente");
+      return;
+    }
+    toast.success("Cliente criado!");
+    setClients((prev) => [...prev, data]);
+    setRideForm((prev) => ({ ...prev, client_id: data.id }));
     setClientForm({ name: "", phone: "" });
     setShowClientModal(false);
   }, [clientForm]);
@@ -120,21 +145,18 @@ export default function AgendaPage() {
     },
   }), []);
 
+  if (loading) return <p className="text-admin-muted text-center py-8">Carregando...</p>;
+
   return (
     <div className="animate-fade-in">
-      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl md:text-2xl font-bold text-admin-text">Agenda</h2>
-        <button
-          onClick={() => setShowRideModal(true)}
-          className="btn-admin flex items-center gap-2"
-        >
+        <button onClick={() => setShowRideModal(true)} className="btn-admin flex items-center gap-2">
           <Plus className="w-4 h-4" />
           Lançar Nova Corrida
         </button>
       </div>
 
-      {/* Calendar */}
       <div className="bg-admin-card border border-admin-border rounded-xl p-5">
         <style jsx global>{`
           .rbc-calendar { background: transparent; color: #e0e0e0; }
@@ -168,7 +190,6 @@ export default function AgendaPage() {
         </div>
       </div>
 
-      {/* Modal Nova Corrida */}
       {showRideModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <div className="bg-admin-dark border border-admin-border rounded-xl w-full max-w-lg p-6 animate-fade-in">
@@ -179,7 +200,6 @@ export default function AgendaPage() {
               </button>
             </div>
             <div className="space-y-4">
-              {/* Cliente */}
               <div>
                 <label className="text-xs text-admin-muted uppercase tracking-widest mb-1 block">Cliente</label>
                 <div className="flex gap-2">
@@ -203,68 +223,33 @@ export default function AgendaPage() {
                   </button>
                 </div>
               </div>
-              {/* Origem / Destino */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs text-admin-muted uppercase tracking-widest mb-1 block">Origem</label>
-                  <input
-                    value={rideForm.origin}
-                    onChange={(e) => setRideForm((p) => ({ ...p, origin: e.target.value }))}
-                    className="w-full bg-admin-card border border-admin-border rounded-lg px-3 py-2 text-sm text-admin-text focus:outline-none focus:border-admin-gold/50"
-                    placeholder="Ex: Aeroporto FLN"
-                  />
+                  <input value={rideForm.origin} onChange={(e) => setRideForm((p) => ({ ...p, origin: e.target.value }))} className="w-full bg-admin-card border border-admin-border rounded-lg px-3 py-2 text-sm text-admin-text focus:outline-none focus:border-admin-gold/50" placeholder="Ex: Aeroporto FLN" />
                 </div>
                 <div>
                   <label className="text-xs text-admin-muted uppercase tracking-widest mb-1 block">Destino</label>
-                  <input
-                    value={rideForm.destination}
-                    onChange={(e) => setRideForm((p) => ({ ...p, destination: e.target.value }))}
-                    className="w-full bg-admin-card border border-admin-border rounded-lg px-3 py-2 text-sm text-admin-text focus:outline-none focus:border-admin-gold/50"
-                    placeholder="Ex: Jurerê Internacional"
-                  />
+                  <input value={rideForm.destination} onChange={(e) => setRideForm((p) => ({ ...p, destination: e.target.value }))} className="w-full bg-admin-card border border-admin-border rounded-lg px-3 py-2 text-sm text-admin-text focus:outline-none focus:border-admin-gold/50" placeholder="Ex: Jurerê Internacional" />
                 </div>
               </div>
-              {/* Data / Horário */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs text-admin-muted uppercase tracking-widest mb-1 block">Data</label>
-                  <input
-                    type="date"
-                    value={rideForm.date}
-                    onChange={(e) => setRideForm((p) => ({ ...p, date: e.target.value }))}
-                    className="w-full bg-admin-card border border-admin-border rounded-lg px-3 py-2 text-sm text-admin-text focus:outline-none focus:border-admin-gold/50"
-                  />
+                  <input type="date" value={rideForm.date} onChange={(e) => setRideForm((p) => ({ ...p, date: e.target.value }))} className="w-full bg-admin-card border border-admin-border rounded-lg px-3 py-2 text-sm text-admin-text focus:outline-none focus:border-admin-gold/50" />
                 </div>
                 <div>
                   <label className="text-xs text-admin-muted uppercase tracking-widest mb-1 block">Horário</label>
-                  <input
-                    type="time"
-                    value={rideForm.time}
-                    onChange={(e) => setRideForm((p) => ({ ...p, time: e.target.value }))}
-                    className="w-full bg-admin-card border border-admin-border rounded-lg px-3 py-2 text-sm text-admin-text focus:outline-none focus:border-admin-gold/50"
-                  />
+                  <input type="time" value={rideForm.time} onChange={(e) => setRideForm((p) => ({ ...p, time: e.target.value }))} className="w-full bg-admin-card border border-admin-border rounded-lg px-3 py-2 text-sm text-admin-text focus:outline-none focus:border-admin-gold/50" />
                 </div>
               </div>
-              {/* Valor */}
               <div>
                 <label className="text-xs text-admin-muted uppercase tracking-widest mb-1 block">Valor (R$)</label>
-                <input
-                  type="number"
-                  value={rideForm.price}
-                  onChange={(e) => setRideForm((p) => ({ ...p, price: e.target.value }))}
-                  className="w-full bg-admin-card border border-admin-border rounded-lg px-3 py-2 text-sm text-admin-text focus:outline-none focus:border-admin-gold/50"
-                  placeholder="0,00"
-                />
+                <input type="number" value={rideForm.price} onChange={(e) => setRideForm((p) => ({ ...p, price: e.target.value }))} className="w-full bg-admin-card border border-admin-border rounded-lg px-3 py-2 text-sm text-admin-text focus:outline-none focus:border-admin-gold/50" placeholder="0,00" />
               </div>
-              {/* Observação */}
               <div>
                 <label className="text-xs text-admin-muted uppercase tracking-widest mb-1 block">Observação</label>
-                <textarea
-                  value={rideForm.notes}
-                  onChange={(e) => setRideForm((p) => ({ ...p, notes: e.target.value }))}
-                  rows={2}
-                  className="w-full bg-admin-card border border-admin-border rounded-lg px-3 py-2 text-sm text-admin-text focus:outline-none focus:border-admin-gold/50 resize-none"
-                />
+                <textarea value={rideForm.notes} onChange={(e) => setRideForm((p) => ({ ...p, notes: e.target.value }))} rows={2} className="w-full bg-admin-card border border-admin-border rounded-lg px-3 py-2 text-sm text-admin-text focus:outline-none focus:border-admin-gold/50 resize-none" />
               </div>
               <button onClick={handleCreateRide} className="btn-admin w-full">
                 Criar Corrida
@@ -274,7 +259,6 @@ export default function AgendaPage() {
         </div>
       )}
 
-      {/* Modal Novo Cliente */}
       {showClientModal && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4">
           <div className="bg-admin-dark border border-admin-border rounded-xl w-full max-w-sm p-6 animate-fade-in">
@@ -287,21 +271,11 @@ export default function AgendaPage() {
             <div className="space-y-4">
               <div>
                 <label className="text-xs text-admin-muted uppercase tracking-widest mb-1 block">Nome</label>
-                <input
-                  value={clientForm.name}
-                  onChange={(e) => setClientForm((p) => ({ ...p, name: e.target.value }))}
-                  className="w-full bg-admin-card border border-admin-border rounded-lg px-3 py-2 text-sm text-admin-text focus:outline-none focus:border-admin-gold/50"
-                  placeholder="Nome completo"
-                />
+                <input value={clientForm.name} onChange={(e) => setClientForm((p) => ({ ...p, name: e.target.value }))} className="w-full bg-admin-card border border-admin-border rounded-lg px-3 py-2 text-sm text-admin-text focus:outline-none focus:border-admin-gold/50" placeholder="Nome completo" />
               </div>
               <div>
                 <label className="text-xs text-admin-muted uppercase tracking-widest mb-1 block">Telefone</label>
-                <input
-                  value={clientForm.phone}
-                  onChange={(e) => setClientForm((p) => ({ ...p, phone: e.target.value }))}
-                  className="w-full bg-admin-card border border-admin-border rounded-lg px-3 py-2 text-sm text-admin-text focus:outline-none focus:border-admin-gold/50"
-                  placeholder="(48) 99999-9999"
-                />
+                <input value={clientForm.phone} onChange={(e) => setClientForm((p) => ({ ...p, phone: e.target.value }))} className="w-full bg-admin-card border border-admin-border rounded-lg px-3 py-2 text-sm text-admin-text focus:outline-none focus:border-admin-gold/50" placeholder="(48) 99999-9999" />
               </div>
               <button onClick={handleCreateClient} className="btn-admin w-full">
                 Criar e Selecionar
