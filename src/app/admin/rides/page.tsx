@@ -11,7 +11,9 @@ import {
 } from "@/lib/formatters";
 import { createClient } from "@/lib/supabase/client";
 import type { Ride } from "@/lib/types";
-import { ChevronRight, MapPin } from "lucide-react";
+import { ChevronRight, MapPin, Plus } from "lucide-react";
+import { PeriodFilter, getDateRange, type PeriodKey } from "@/components/shared/PeriodFilter";
+import { NewRideModal } from "@/components/shared/NewRideModal";
 
 const statusBadgeClasses: Record<RideStatus, string> = {
   scheduled: "bg-admin-blue/10 text-admin-blue border-admin-blue/20",
@@ -27,38 +29,6 @@ const statusTabs = [
   { key: "finalizadas", label: "Finalizadas", status: "completed" as RideStatus },
   { key: "canceladas", label: "Canceladas", status: "cancelled" as RideStatus },
 ];
-
-type PeriodKey = "hoje" | "semana" | "mes" | "todos";
-
-const periodTabs: { key: PeriodKey; label: string }[] = [
-  { key: "hoje", label: "Hoje" },
-  { key: "semana", label: "Semana" },
-  { key: "mes", label: "Mês" },
-  { key: "todos", label: "Todos" },
-];
-
-function getDateRange(period: PeriodKey): { from: string; to: string } | null {
-  const now = new Date();
-  const fmt = (d: Date) => d.toISOString().slice(0, 10);
-  switch (period) {
-    case "hoje":
-      return { from: fmt(now), to: fmt(now) };
-    case "semana": {
-      const start = new Date(now);
-      start.setDate(now.getDate() - now.getDay());
-      const end = new Date(start);
-      end.setDate(start.getDate() + 6);
-      return { from: fmt(start), to: fmt(end) };
-    }
-    case "mes":
-      return {
-        from: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`,
-        to: fmt(new Date(now.getFullYear(), now.getMonth() + 1, 0)),
-      };
-    case "todos":
-      return null;
-  }
-}
 
 function RideCard({ ride }: { ride: Ride }) {
   return (
@@ -156,34 +126,34 @@ export default function RidesPage() {
   const [allRides, setAllRides] = useState<Ride[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("todas");
-  const [period, setPeriod] = useState<PeriodKey>("mes");
+  const [period, setPeriod] = useState<PeriodKey>("30dias");
+  const [customFrom, setCustomFrom] = useState("");
+  const [customTo, setCustomTo] = useState("");
+  const [showNewRide, setShowNewRide] = useState(false);
+
+  async function fetchRides() {
+    const { data, error } = await supabase
+      .from("rides")
+      .select("*, client:clients(name), driver:drivers(full_name), agency:agencies(name)")
+      .order("scheduled_at", { ascending: false });
+    if (error) {
+      toast.error("Erro ao carregar corridas");
+      return;
+    }
+    setAllRides(data ?? []);
+    setLoading(false);
+  }
 
   useEffect(() => {
-    async function fetch() {
-      const { data, error } = await supabase
-        .from("rides")
-        .select("*, client:clients(name), driver:drivers(full_name), agency:agencies(name)")
-        .order("scheduled_at", { ascending: false });
-      if (error) {
-        toast.error("Erro ao carregar corridas");
-        return;
-      }
-      setAllRides(data ?? []);
-      setLoading(false);
-    }
-    fetch();
+    fetchRides();
   }, []);
 
-  // Filter by period
-  const range = getDateRange(period);
-  const periodFiltered = range
-    ? allRides.filter((r) => {
-        const d = r.scheduled_at.slice(0, 10);
-        return d >= range.from && d <= range.to;
-      })
-    : allRides;
+  const range = getDateRange(period, customFrom, customTo);
+  const periodFiltered = allRides.filter((r) => {
+    const d = r.scheduled_at.slice(0, 10);
+    return d >= range.from && d <= range.to;
+  });
 
-  // Filter by status
   const activeStatus = statusTabs.find((t) => t.key === activeTab)?.status ?? null;
   const filtered = activeStatus ? periodFiltered.filter((r) => r.status === activeStatus) : periodFiltered;
 
@@ -191,27 +161,20 @@ export default function RidesPage() {
     <div className="animate-fade-in">
       <div className="flex items-center justify-between mb-4 gap-2">
         <h2 className="text-lg md:text-2xl font-bold text-admin-text">Corridas</h2>
-        <Link href="/admin/rides/new" className="btn-admin text-xs md:text-sm whitespace-nowrap">
+        <button onClick={() => setShowNewRide(true)} className="btn-admin flex items-center gap-2 text-xs md:text-sm whitespace-nowrap">
+          <Plus className="w-4 h-4" />
           Nova Corrida
-        </Link>
+        </button>
       </div>
 
-      {/* Period filter */}
-      <div className="flex items-center gap-1.5 mb-3 overflow-x-auto pb-1 scrollbar-hide">
-        {periodTabs.map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => setPeriod(tab.key)}
-            className={`text-[10px] px-3 py-1.5 rounded-full border uppercase tracking-widest font-medium transition whitespace-nowrap shrink-0 ${
-              period === tab.key
-                ? "bg-admin-gold/10 text-admin-gold border-admin-gold/20"
-                : "text-admin-text-dim hover:text-admin-text hover:bg-admin-card border-transparent"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      <PeriodFilter
+        period={period}
+        onPeriodChange={setPeriod}
+        customFrom={customFrom}
+        customTo={customTo}
+        onCustomFromChange={setCustomFrom}
+        onCustomToChange={setCustomTo}
+      />
 
       {/* Status filter */}
       <div className="flex items-center gap-1.5 mb-4 overflow-x-auto pb-1 scrollbar-hide">
@@ -236,6 +199,12 @@ export default function RidesPage() {
       ) : (
         <RidesTable items={filtered} />
       )}
+
+      <NewRideModal
+        open={showNewRide}
+        onClose={() => setShowNewRide(false)}
+        onCreated={() => fetchRides()}
+      />
     </div>
   );
 }

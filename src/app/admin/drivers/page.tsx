@@ -80,7 +80,7 @@ export default function DriversPage() {
       {open && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 animate-fade-in" onClick={() => setOpen(false)}>
           <div className="bg-admin-card border border-admin-border rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="px-5 pt-5 pb-3 border-b border-admin-border flex items-center justify-between sticky top-0 bg-admin-card z-10">
+            <div className="px-5 pt-5 pb-3 border-b border-admin-border flex items-center justify-between ">
               <h3 className="text-lg font-bold text-admin-text">Novo Motorista</h3>
               <button onClick={() => setOpen(false)} className="text-admin-muted hover:text-admin-text transition p-1">
                 <X className="h-5 w-5" />

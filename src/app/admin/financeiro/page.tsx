@@ -15,11 +15,10 @@ import {
 } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/formatters";
 import type { FinancialStatus } from "@/lib/formatters";
-import {
-  financialStatusLabels,
-} from "@/lib/formatters";
+import { financialStatusLabels } from "@/lib/formatters";
 import { createClient } from "@/lib/supabase/client";
 import type { Ride, Agency } from "@/lib/types";
+import { PeriodFilter, getDateRange, type PeriodKey } from "@/components/shared/PeriodFilter";
 
 const statusIcons: Record<FinancialStatus, React.ElementType> = {
   pending: Clock,
@@ -41,44 +40,13 @@ const allStatuses: FinancialStatus[] = [
   "paid_to_partner",
 ];
 
-type PeriodKey = "hoje" | "semana" | "mes" | "todos";
-
-const periodTabs: { key: PeriodKey; label: string }[] = [
-  { key: "hoje", label: "Hoje" },
-  { key: "semana", label: "Semana" },
-  { key: "mes", label: "Mês" },
-  { key: "todos", label: "Todos" },
-];
-
-function getDateRange(period: PeriodKey): { from: string; to: string } | null {
-  const now = new Date();
-  const fmt = (d: Date) => d.toISOString().slice(0, 10);
-
-  switch (period) {
-    case "hoje":
-      return { from: fmt(now), to: fmt(now) };
-    case "semana": {
-      const start = new Date(now);
-      start.setDate(now.getDate() - now.getDay());
-      const end = new Date(start);
-      end.setDate(start.getDate() + 6);
-      return { from: fmt(start), to: fmt(end) };
-    }
-    case "mes":
-      return {
-        from: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`,
-        to: fmt(new Date(now.getFullYear(), now.getMonth() + 1, 0)),
-      };
-    case "todos":
-      return null;
-  }
-}
-
 export default function FinanceiroPage() {
   const supabase = createClient();
   const [allRides, setAllRides] = useState<Ride[]>([]);
   const [loading, setLoading] = useState(true);
-  const [period, setPeriod] = useState<PeriodKey>("mes");
+  const [period, setPeriod] = useState<PeriodKey>("30dias");
+  const [customFrom, setCustomFrom] = useState("");
+  const [customTo, setCustomTo] = useState("");
 
   async function fetchRides() {
     const { data, error } = await supabase
@@ -97,14 +65,11 @@ export default function FinanceiroPage() {
     fetchRides();
   }, []);
 
-  // Filter by period
-  const range = getDateRange(period);
-  const rides = range
-    ? allRides.filter((r) => {
-        const d = r.scheduled_at.slice(0, 10);
-        return d >= range.from && d <= range.to;
-      })
-    : allRides;
+  const range = getDateRange(period, customFrom, customTo);
+  const rides = allRides.filter((r) => {
+    const d = r.scheduled_at.slice(0, 10);
+    return d >= range.from && d <= range.to;
+  });
 
   const statCards = allStatuses.map((status) => {
     const matching = rides.filter((r) => r.financial_status === status);
@@ -147,22 +112,14 @@ export default function FinanceiroPage() {
     <div className="animate-fade-in">
       <h2 className="text-lg md:text-2xl font-bold text-admin-text mb-4 md:mb-6">Financeiro</h2>
 
-      {/* Period filter tabs */}
-      <div className="flex items-center gap-1.5 mb-4 overflow-x-auto pb-1 scrollbar-hide">
-        {periodTabs.map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => setPeriod(tab.key)}
-            className={`text-[10px] px-3 py-1.5 rounded-full border uppercase tracking-widest font-medium transition whitespace-nowrap shrink-0 ${
-              period === tab.key
-                ? "bg-admin-gold/10 text-admin-gold border-admin-gold/20"
-                : "text-admin-text-dim hover:text-admin-text hover:bg-admin-card border-transparent"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      <PeriodFilter
+        period={period}
+        onPeriodChange={setPeriod}
+        customFrom={customFrom}
+        customTo={customTo}
+        onCustomFromChange={setCustomFrom}
+        onCustomToChange={setCustomTo}
+      />
 
       {/* Summary cards */}
       <div className="grid grid-cols-3 gap-3 mb-4">
@@ -189,7 +146,7 @@ export default function FinanceiroPage() {
         </div>
       </div>
 
-      {/* Status cards — horizontal scroll on mobile */}
+      {/* Status cards */}
       <div className="flex md:grid md:grid-cols-4 gap-3 md:gap-4 mb-6 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
         {statCards.map((s) => (
           <div key={s.status} className="stat-card animate-count-up min-w-[140px] shrink-0 md:min-w-0">
