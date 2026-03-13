@@ -7,13 +7,12 @@ import { ptBR } from "date-fns/locale/pt-BR";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import { Plus, ChevronLeft, ChevronRight, MapPin, Clock, Users } from "lucide-react";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { statusLabels, statusColors, formatCurrency } from "@/lib/formatters";
 import type { RideStatus } from "@/lib/formatters";
 import { createClient } from "@/lib/supabase/client";
 import type { Ride } from "@/lib/types";
 import { NewRideModal } from "@/components/shared/NewRideModal";
+import { RideDetailsModal } from "@/components/shared/RideDetailsModal";
 
 const locales = { "pt-BR": ptBR };
 const localizer = dateFnsLocalizer({ format, parse, startOfWeek, getDay, locales });
@@ -40,10 +39,12 @@ function MobileAgenda({
   rides,
   selectedDate,
   onSelectDate,
+  onSelectRide,
 }: {
   rides: Ride[];
   selectedDate: Date;
   onSelectDate: (d: Date) => void;
+  onSelectRide: (id: string | number) => void;
 }) {
   const [weekStart, setWeekStart] = useState(() => {
     const d = new Date(selectedDate);
@@ -127,7 +128,11 @@ function MobileAgenda({
       ) : (
         <div className="space-y-2.5">
           {dayRides.map((ride) => (
-            <Link key={ride.id} href={`/admin/rides/${ride.id}`} className="block">
+            <button 
+              key={ride.id} 
+              onClick={() => onSelectRide(ride.id)} 
+              className="block w-full text-left"
+            >
               <div className="bg-admin-card border border-admin-border rounded-xl p-3.5 space-y-2 hover:bg-admin-card-hover transition-colors">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2 min-w-0">
@@ -155,7 +160,7 @@ function MobileAgenda({
                   )}
                 </div>
               </div>
-            </Link>
+            </button>
           ))}
         </div>
       )}
@@ -166,10 +171,10 @@ function MobileAgenda({
 // ── Main Page ──
 export default function AgendaPage() {
   const supabase = createClient();
-  const router = useRouter();
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [rides, setRides] = useState<Ride[]>([]);
   const [showRideModal, setShowRideModal] = useState(false);
+  const [selectedRideId, setSelectedRideId] = useState<string | number | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(new Date());
 
@@ -219,8 +224,8 @@ export default function AgendaPage() {
   );
 
   const onSelectEvent = useCallback((event: CalendarEvent) => {
-    router.push(`/admin/rides/${event.id}`);
-  }, [router]);
+    setSelectedRideId(event.id);
+  }, []);
 
   if (loading) return <p className="text-admin-muted text-center py-8">Carregando...</p>;
 
@@ -237,7 +242,12 @@ export default function AgendaPage() {
 
       {/* Mobile */}
       <div className="md:hidden">
-        <MobileAgenda rides={rides} selectedDate={selectedDate} onSelectDate={setSelectedDate} />
+        <MobileAgenda 
+          rides={rides} 
+          selectedDate={selectedDate} 
+          onSelectDate={setSelectedDate} 
+          onSelectRide={setSelectedRideId}
+        />
       </div>
 
       {/* Desktop */}
@@ -281,6 +291,14 @@ export default function AgendaPage() {
         open={showRideModal}
         onClose={() => setShowRideModal(false)}
         onCreated={() => fetchData()}
+      />
+
+      <RideDetailsModal
+        rideId={selectedRideId}
+        open={!!selectedRideId}
+        onClose={() => setSelectedRideId(null)}
+        onUpdate={() => fetchData()}
+        view="admin"
       />
     </div>
   );

@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
-import Link from "next/link";
 import {
   formatDate,
   formatTime,
@@ -12,10 +11,11 @@ import {
 import { MapPin, Users } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Ride } from "@/lib/types";
+import { RideDetailsModal } from "@/components/shared/RideDetailsModal";
 
-function RideCard({ ride }: { ride: Ride }) {
+function RideCard({ ride, onClick }: { ride: Ride; onClick: () => void }) {
   return (
-    <Link href={`/driver/rides/${ride.id}`} className="block">
+    <button onClick={onClick} className="block w-full text-left">
       <div className="bg-admin-card border border-admin-border rounded-xl p-4 space-y-2 hover:bg-admin-card-hover transition-colors">
         <div className="flex items-center justify-between">
           <span className="text-lg font-semibold text-admin-silver">
@@ -41,7 +41,7 @@ function RideCard({ ride }: { ride: Ride }) {
           </span>
         </div>
       </div>
-    </Link>
+    </button>
   );
 }
 
@@ -49,41 +49,39 @@ export default function DriverAgendaPage() {
   const supabase = createClient();
   const [rides, setRides] = useState<Ride[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedRideId, setSelectedRideId] = useState<string | number | null>(null);
 
   const fetch = useCallback(async () => {
-    async function fetchData() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
 
-      const { data: driver } = await supabase
-        .from("drivers")
-        .select("id")
-        .eq("profile_id", user.id)
-        .single();
-      if (!driver) {
-        setLoading(false);
-        return;
-      }
-
-      const today = new Date();
-      const nextWeek = new Date();
-      nextWeek.setDate(today.getDate() + 7);
-
-      const { data, error } = await supabase
-        .from("rides")
-        .select("*, client:clients(name)")
-        .eq("driver_id", driver.id)
-        .gte("scheduled_at", today.toISOString().slice(0, 10) + "T00:00:00")
-        .lte("scheduled_at", nextWeek.toISOString().slice(0, 10) + "T23:59:59")
-        .order("scheduled_at");
-      if (error) {
-        toast.error("Erro ao carregar agenda");
-        return;
-      }
-      setRides(data ?? []);
+    const { data: driver } = await supabase
+      .from("drivers")
+      .select("id")
+      .eq("profile_id", user.id)
+      .single();
+    if (!driver) {
       setLoading(false);
+      return;
     }
-    fetchData();
+
+    const today = new Date();
+    const nextWeek = new Date();
+    nextWeek.setDate(today.getDate() + 7);
+
+    const { data, error } = await supabase
+      .from("rides")
+      .select("*, client:clients(name)")
+      .eq("driver_id", driver.id)
+      .gte("scheduled_at", today.toISOString().slice(0, 10) + "T00:00:00")
+      .lte("scheduled_at", nextWeek.toISOString().slice(0, 10) + "T23:59:59")
+      .order("scheduled_at");
+    if (error) {
+      toast.error("Erro ao carregar agenda");
+      return;
+    }
+    setRides(data ?? []);
+    setLoading(false);
   }, [supabase]);
 
   useEffect(() => {
@@ -107,7 +105,7 @@ export default function DriverAgendaPage() {
         ) : (
           <div className="space-y-3">
             {todayRides.map((ride) => (
-              <RideCard key={ride.id} ride={ride} />
+              <RideCard key={ride.id} ride={ride} onClick={() => setSelectedRideId(ride.id)} />
             ))}
           </div>
         )}
@@ -126,12 +124,20 @@ export default function DriverAgendaPage() {
                 <p className="mb-1 text-xs font-medium text-admin-muted">
                   {formatDate(ride.scheduled_at)}
                 </p>
-                <RideCard ride={ride} />
+                <RideCard ride={ride} onClick={() => setSelectedRideId(ride.id)} />
               </div>
             ))}
           </div>
         )}
       </section>
+
+      <RideDetailsModal
+        rideId={selectedRideId}
+        open={!!selectedRideId}
+        onClose={() => setSelectedRideId(null)}
+        onUpdate={fetch}
+        view="driver"
+      />
     </div>
   );
 }
