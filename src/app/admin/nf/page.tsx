@@ -2,11 +2,11 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
-import { formatCurrency, formatDate } from "@/lib/formatters";
+import { formatCurrency, formatDate, formatDateTime } from "@/lib/formatters";
 import { FileText, MapPin } from "lucide-react";
 import jsPDF from "jspdf";
 import { createClient } from "@/lib/supabase/client";
-import type { Ride, Client } from "@/lib/types";
+import type { Ride } from "@/lib/types";
 
 export default function NFPage() {
   const supabase = createClient();
@@ -14,18 +14,26 @@ export default function NFPage() {
   const [loading, setLoading] = useState(true);
 
   const fetchRides = useCallback(async () => {
-    const { data, error } = await supabase
-      .from("rides")
-      .select("*, client:clients(name, document), driver:drivers(full_name)")
-      .eq("status", "completed")
-      .is("nf_number", null)
-      .order("scheduled_at", { ascending: false });
-    if (error) {
-      toast.error("Erro ao carregar corridas");
-      return;
+    try {
+      const { data, error } = await supabase
+        .from("rides")
+        .select("*, client:clients(name, document), driver:drivers(full_name)")
+        .eq("status", "completed")
+        .is("nf_number", null)
+        .order("scheduled_at", { ascending: false });
+      
+      if (error) {
+        console.error("NF fetch error:", error);
+        toast.error("Erro ao carregar corridas: " + error.message);
+        return;
+      }
+      setRides(data ?? []);
+    } catch (err: any) {
+      console.error("NF unexpected error:", err);
+      toast.error("Erro inesperado ao carregar notas fiscais");
+    } finally {
+      setLoading(false);
     }
-    setRides(data ?? []);
-    setLoading(false);
   }, [supabase]);
 
   useEffect(() => {
@@ -37,80 +45,60 @@ export default function NFPage() {
     const doc = new jsPDF();
 
     doc.setFontSize(20);
-    doc.text("NOTA FISCAL DE SERVIÇO", 105, 25, { align: "center" });
-    doc.setFontSize(12);
-    doc.text("FLN Transfer - Serviços de Transporte", 105, 35, { align: "center" });
-    doc.text("CNPJ: 00.000.000/0001-00", 105, 42, { align: "center" });
-    doc.line(14, 48, 196, 48);
+    doc.text("NOTA FISCAL DE SERVIÇO", 105, 20, { align: "center" });
+    
+    doc.setFontSize(10);
+    doc.text("FLN Transfer LTDA", 105, 30, { align: "center" });
+    doc.text("CNPJ: 00.000.000/0001-00", 105, 36, { align: "center" });
+    doc.line(14, 42, 196, 42);
 
     doc.setFontSize(11);
-    let y = 58;
-    doc.setFont("helvetica", "bold");
-    doc.text("NF Número:", 14, y);
-    doc.setFont("helvetica", "normal");
-    doc.text(nfNumber, 55, y);
-    y += 10;
-    doc.setFont("helvetica", "bold");
-    doc.text("Data:", 14, y);
-    doc.setFont("helvetica", "normal");
-    doc.text(formatDate(ride.scheduled_at), 55, y);
-
-    y += 14;
+    let y = 52;
+    doc.text(`NF Número: ${nfNumber}`, 14, y);
+    doc.text(`Data: ${formatDate(new Date().toISOString())}`, 14, y + 8);
+    
+    y += 24;
     doc.setFont("helvetica", "bold");
     doc.text("DADOS DO CLIENTE", 14, y);
-    y += 8;
     doc.setFont("helvetica", "normal");
-    doc.text(`Nome: ${ride.client?.name ?? "—"}`, 14, y);
-    y += 7;
-    const clientDoc = (ride.client as Client & { document?: string })?.document ?? "—";
-    doc.text(`Documento: ${clientDoc}`, 14, y);
+    doc.text(`Nome: ${ride.client?.name ?? "—"}`, 14, y + 8);
+    doc.text(`Documento: ${ride.client?.document ?? "—"}`, 14, y + 16);
 
-    y += 14;
+    y += 32;
     doc.setFont("helvetica", "bold");
     doc.text("DADOS DO SERVIÇO", 14, y);
-    y += 8;
     doc.setFont("helvetica", "normal");
-    doc.text(`Origem: ${ride.origin}`, 14, y);
-    y += 7;
-    doc.text(`Destino: ${ride.destination}`, 14, y);
-    y += 7;
-    doc.text(`Motorista: ${ride.driver?.full_name ?? "—"}`, 14, y);
+    doc.text(`Descrição: Transporte executivo de ${ride.origin} para ${ride.destination}`, 14, y + 8);
+    doc.text(`Data do Serviço: ${formatDate(ride.scheduled_at)}`, 14, y + 16);
+    doc.text(`Motorista: ${ride.driver?.full_name ?? "—"}`, 14, y + 24);
 
-    y += 14;
-    doc.line(14, y, 196, y);
-    y += 10;
+    y += 40;
     doc.setFontSize(14);
     doc.setFont("helvetica", "bold");
     doc.text(`VALOR TOTAL: ${formatCurrency(Number(ride.price))}`, 14, y);
-
-    doc.save(`${nfNumber}.pdf`);
 
     const { error } = await supabase
       .from("rides")
       .update({ nf_number: nfNumber })
       .eq("id", ride.id);
+
     if (error) {
-      toast.error("Erro ao salvar NF no banco");
-      return;
+      toast.error("Erro ao salvar número da NF no banco");
     }
 
-    toast.success(`${nfNumber} gerada com sucesso!`);
-    setRides((prev) => prev.filter((r) => r.id !== ride.id));
+    doc.save(`NF-${ride.id}.pdf`);
+    toast.success("NF gerada e baixada com sucesso!");
+    fetchRides();
   }
-
-  if (loading) return <p className="text-admin-muted text-center py-8">Carregando...</p>;
 
   return (
     <div className="animate-fade-in">
-      <h2 className="text-lg md:text-2xl font-bold text-admin-text mb-4 md:mb-6">Notas Fiscais</h2>
+      <h2 className="text-xl md:text-2xl font-bold text-admin-text mb-6">Gerar Notas Fiscais</h2>
 
-      {rides.length === 0 ? (
-        <p className="text-admin-text-dim">
-          Todas as corridas já possuem nota fiscal gerada.
-        </p>
+      {loading ? (
+        <p className="text-admin-muted text-center py-8">Carregando...</p>
       ) : (
         <>
-          {/* Mobile: cards */}
           <div className="md:hidden space-y-3">
             {rides.map((ride) => (
               <div key={ride.id} className="stat-card !p-4 space-y-3">
@@ -120,6 +108,16 @@ export default function NFPage() {
                     <p className="text-[10px] text-admin-muted uppercase tracking-wider">{formatDate(ride.scheduled_at)}</p>
                   </div>
                   <p className="text-sm font-bold text-admin-silver whitespace-nowrap">{formatCurrency(Number(ride.price))}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-[10px] text-admin-muted">
+                  <div>
+                    <p className="mb-0.5 opacity-50">ID</p>
+                    <p className="text-admin-text-dim">{ride.id}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="mb-0.5 opacity-50">Registrada em</p>
+                    <p className="text-admin-text-dim">{formatDateTime(ride.created_at)}</p>
+                  </div>
                 </div>
                 <div className="flex items-center gap-2 text-xs text-admin-text-dim pt-3 border-t border-white/5">
                   <MapPin className="h-3.5 w-3.5 shrink-0 text-admin-muted" />
@@ -131,9 +129,11 @@ export default function NFPage() {
                 </button>
               </div>
             ))}
+            {rides.length === 0 && (
+              <p className="text-admin-muted text-center py-8">Nenhuma corrida finalizada pendente de NF.</p>
+            )}
           </div>
 
-          {/* Desktop: table */}
           <div className="hidden md:block admin-table-container">
             <div className="overflow-x-auto">
               <table className="admin-table">
@@ -141,6 +141,7 @@ export default function NFPage() {
                   <tr>
                     <th>ID</th>
                     <th>Data</th>
+                    <th>Data registrada</th>
                     <th>Cliente</th>
                     <th>Origem</th>
                     <th>Destino</th>
@@ -153,6 +154,7 @@ export default function NFPage() {
                     <tr key={ride.id}>
                       <td className="text-admin-text font-medium">{ride.id}</td>
                       <td className="text-admin-text-dim">{formatDate(ride.scheduled_at)}</td>
+                      <td className="text-admin-text-dim">{formatDateTime(ride.created_at)}</td>
                       <td className="text-admin-text-dim">{ride.client?.name ?? "—"}</td>
                       <td className="text-admin-text-dim">{ride.origin}</td>
                       <td className="text-admin-text-dim">{ride.destination}</td>
@@ -165,6 +167,13 @@ export default function NFPage() {
                       </td>
                     </tr>
                   ))}
+                  {rides.length === 0 && (
+                    <tr>
+                      <td colSpan={8} className="text-center text-admin-muted py-8">
+                        Nenhuma corrida finalizada pendente de NF.
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>

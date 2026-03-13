@@ -60,16 +60,24 @@ export default function FinanceiroPage() {
   });
 
   const fetchRides = useCallback(async () => {
-    const { data, error } = await supabase
-      .from("rides")
-      .select("*, client:clients(name), agency:agencies(name, commission_pct)")
-      .order("scheduled_at", { ascending: false }) as { data: Ride[] | null; error: import('@supabase/supabase-js').PostgrestError | null };
-    if (error) {
-      toast.error("Erro ao carregar dados financeiros");
-      return;
+    try {
+      const { data, error } = await supabase
+        .from("rides")
+        .select("*, client:clients(name), agency:agencies(name, commission_pct)")
+        .order("scheduled_at", { ascending: false });
+      
+      if (error) {
+        console.error("Financeiro fetch error:", error);
+        toast.error("Erro ao carregar dados: " + error.message);
+        return;
+      }
+      setAllRides(data ?? []);
+    } catch (err: any) {
+      console.error("Financeiro unexpected error:", err);
+      toast.error("Erro inesperado ao carregar dados financeiros");
+    } finally {
+      setLoading(false);
     }
-    setAllRides(data ?? []);
-    setLoading(false);
   }, [supabase]);
 
   useEffect(() => {
@@ -167,7 +175,6 @@ export default function FinanceiroPage() {
         />
       </div>
 
-      {/* Summary cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
         <div className="stat-card !p-5">
           <div className="flex items-center justify-between mb-2">
@@ -192,7 +199,6 @@ export default function FinanceiroPage() {
         </div>
       </div>
 
-      {/* Status cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 mb-8">
         {statCards.map((s) => (
           <div key={s.status} className="stat-card !p-4 overflow-hidden">
@@ -208,7 +214,6 @@ export default function FinanceiroPage() {
         ))}
       </div>
 
-      {/* Mobile: card list for Pendentes */}
       <div className="md:hidden space-y-4 mb-8">
         <h3 className="text-lg font-bold text-admin-text px-1">Pendentes ({pendingRides.length})</h3>
         {pendingRides.length === 0 ? (
@@ -256,7 +261,6 @@ export default function FinanceiroPage() {
         )}
       </div>
 
-      {/* Desktop: table for Pendentes */}
       <div className="hidden md:block admin-table-container">
         <div className="px-6 py-5 border-b border-white/5 bg-white/[0.02]">
           <h3 className="text-base font-bold text-admin-text">Pendentes ({pendingRides.length})</h3>

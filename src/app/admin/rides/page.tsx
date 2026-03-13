@@ -14,7 +14,7 @@ import {
 } from "@/lib/formatters";
 import { createClient } from "@/lib/supabase/client";
 import type { Ride } from "@/lib/types";
-import { ChevronRight, MapPin, Plus, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { ChevronRight, MapPin, Plus, ArrowUpDown, ArrowUp, ArrowDown, User } from "lucide-react";
 import { PeriodFilter, getDateRange, type PeriodKey } from "@/components/shared/PeriodFilter";
 import { NewRideModal } from "@/components/shared/NewRideModal";
 
@@ -43,7 +43,7 @@ const statusTabs = [
   { key: "canceladas", label: "Canceladas", status: "cancelled" as RideStatus },
 ];
 
-type SortField = "client" | "origin" | "destination" | "date" | "created_at" | "price" | "status" | "financial_status";
+type SortField = "client" | "driver" | "origin" | "destination" | "date" | "created_at" | "price" | "status" | "financial_status";
 type SortOrder = "asc" | "desc";
 
 function RideCard({ ride, onStatusChange }: { ride: Ride; onStatusChange: (id: string | number, status: FinancialStatus) => void }) {
@@ -57,13 +57,23 @@ function RideCard({ ride, onStatusChange }: { ride: Ride; onStatusChange: (id: s
           {statusLabels[ride.status]}
         </span>
       </div>
+      
+      <div className="flex items-center gap-1.5 text-xs text-admin-text-dim mb-1">
+        <User className="h-3 w-3 shrink-0 text-admin-muted" />
+        <span className={ride.driver?.full_name ? "" : "text-admin-red/70 font-medium"}>
+          {ride.driver?.full_name ?? "Sem motorista"}
+        </span>
+      </div>
+
       <div className="flex items-center gap-1.5 text-xs text-admin-text-dim mb-1">
         <MapPin className="h-3 w-3 shrink-0 text-admin-muted" />
         <span className="truncate">{ride.origin} → {ride.destination}</span>
       </div>
+      
       <div className="text-[10px] text-admin-muted mb-2">
         Registrada em: {formatDateTime(ride.created_at)}
       </div>
+      
       <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/5">
         <span className="text-xs text-admin-muted">{formatDate(ride.scheduled_at)}</span>
         <div className="flex items-center gap-2">
@@ -73,6 +83,7 @@ function RideCard({ ride, onStatusChange }: { ride: Ride; onStatusChange: (id: s
           </Link>
         </div>
       </div>
+      
       <div className="mt-3 pt-3 border-t border-white/5 space-y-2">
         <label className="text-[10px] text-admin-muted uppercase tracking-widest block">Status Financeiro</label>
         <select
@@ -107,7 +118,6 @@ function RidesTable({
 
   return (
     <>
-      {/* Mobile: cards */}
       <div className="md:hidden space-y-3">
         {items.length === 0 ? (
           <p className="text-center text-admin-muted py-8">Nenhuma corrida encontrada.</p>
@@ -116,7 +126,6 @@ function RidesTable({
         )}
       </div>
 
-      {/* Desktop: table */}
       <div className="hidden md:block admin-table-container">
         <div className="overflow-x-auto">
           <table className="admin-table">
@@ -124,6 +133,9 @@ function RidesTable({
               <tr>
                 <th className="cursor-pointer hover:text-admin-text transition px-4" onClick={() => onSort("client")}>
                   <div className="flex items-center">Cliente <SortIcon field="client" /></div>
+                </th>
+                <th className="cursor-pointer hover:text-admin-text transition px-4" onClick={() => onSort("driver")}>
+                  <div className="flex items-center">Motorista <SortIcon field="driver" /></div>
                 </th>
                 <th className="cursor-pointer hover:text-admin-text transition px-4" onClick={() => onSort("origin")}>
                   <div className="flex items-center">Origem <SortIcon field="origin" /></div>
@@ -156,6 +168,11 @@ function RidesTable({
                       {ride.client?.name ?? "—"}
                     </Link>
                   </td>
+                  <td className="px-4">
+                    <span className={ride.driver?.full_name ? "text-admin-text-dim" : "text-admin-red/70 font-bold"}>
+                      {ride.driver?.full_name ?? "Sem motorista"}
+                    </span>
+                  </td>
                   <td className="text-admin-text-dim px-4">{ride.origin}</td>
                   <td className="text-admin-text-dim px-4">{ride.destination}</td>
                   <td className="text-admin-text-dim px-4">{formatDate(ride.scheduled_at)}</td>
@@ -181,7 +198,7 @@ function RidesTable({
               ))}
               {items.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="text-center text-admin-muted py-8">
+                  <td colSpan={9} className="text-center text-admin-muted py-8">
                     Nenhuma corrida encontrada.
                   </td>
                 </tr>
@@ -210,16 +227,24 @@ export default function RidesPage() {
   });
 
   const fetchRides = useCallback(async () => {
-    const { data, error } = await supabase
-      .from("rides")
-      .select("*, client:clients(name), driver:drivers(full_name), agency:agencies(name)")
-      .order("scheduled_at", { ascending: false });
-    if (error) {
-      toast.error("Erro ao carregar corridas");
-      return;
+    try {
+      const { data, error } = await supabase
+        .from("rides")
+        .select("*, client:clients(name), driver:drivers(full_name), agency:agencies(name)")
+        .order("scheduled_at", { ascending: false });
+      
+      if (error) {
+        console.error("Supabase error:", error);
+        toast.error("Erro ao carregar corridas: " + error.message);
+        return;
+      }
+      setAllRides(data ?? []);
+    } catch (err: any) {
+      console.error("Fetch error:", err);
+      toast.error("Erro inesperado ao carregar corridas");
+    } finally {
+      setLoading(false);
     }
-    setAllRides(data ?? []);
-    setLoading(false);
   }, [supabase]);
 
   useEffect(() => {
@@ -251,21 +276,29 @@ export default function RidesPage() {
   };
 
   const range = getDateRange(period, customFrom, customTo);
+  
+  // STEP 1: Narrow down by period
   const periodFiltered = allRides.filter((r) => {
     const d = r.scheduled_at.slice(0, 10);
     return d >= range.from && d <= range.to;
   });
 
+  // STEP 2: Narrow down by active status tab (AGENDADAS, PENDENTES, etc)
   const activeStatus = statusTabs.find((t) => t.key === activeTab)?.status ?? null;
   const filtered = activeStatus ? periodFiltered.filter((r) => r.status === activeStatus) : periodFiltered;
 
-  // Manual sorting logic
+  // STEP 3: Sort the result
   const sorted = [...filtered].sort((a, b) => {
     const order = sortConfig.order === "asc" ? 1 : -1;
     
     switch (sortConfig.field) {
       case "client":
         return order * (a.client?.name ?? "").localeCompare(b.client?.name ?? "");
+      case "driver":
+        // Sort nulls first
+        if (!a.driver?.full_name && b.driver?.full_name) return -1 * order;
+        if (a.driver?.full_name && !b.driver?.full_name) return 1 * order;
+        return order * (a.driver?.full_name ?? "").localeCompare(b.driver?.full_name ?? "");
       case "origin":
         return order * (a.origin ?? "").localeCompare(b.origin ?? "");
       case "destination":
@@ -304,7 +337,6 @@ export default function RidesPage() {
         onCustomToChange={setCustomTo}
       />
 
-      {/* Status filter */}
       <div className="flex items-center gap-1.5 mb-4 overflow-x-auto pb-1 scrollbar-hide">
         {statusTabs.map((tab) => (
           <button
