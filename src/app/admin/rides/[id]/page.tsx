@@ -118,12 +118,6 @@ export default function RideDetailPage() {
         </div>
       </div>
 
-      <div className="bg-admin-card border border-admin-border rounded-xl p-4 md:p-6">
-        <h3 className="text-admin-text font-semibold mb-4 text-sm md:text-base">Mapa</h3>
-        <div className="bg-admin-dark rounded-xl h-40 md:h-48 flex items-center justify-center text-admin-muted text-xs md:text-sm text-center px-4">
-          Google Maps - {ride.origin} → {ride.destination}
-        </div>
-      </div>
     </div>
   );
 }

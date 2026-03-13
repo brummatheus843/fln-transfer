@@ -130,10 +130,6 @@ export default function DriverRideDetailPage() {
         </div>
       </div>
 
-      <div className="bg-admin-dark rounded-xl h-48 flex items-center justify-center text-admin-muted text-sm">
-        Google Maps - Rota de {ride.origin} para {ride.destination}
-      </div>
-
       <div className="space-y-2">
         {status === "scheduled" && (
           <button
