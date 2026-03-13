@@ -43,7 +43,7 @@ const statusTabs = [
   { key: "canceladas", label: "Canceladas", status: "cancelled" as RideStatus },
 ];
 
-type SortField = "client" | "origin" | "destination" | "date" | "created_at" | "price";
+type SortField = "client" | "origin" | "destination" | "date" | "created_at" | "price" | "status" | "financial_status";
 type SortOrder = "asc" | "desc";
 
 function RideCard({ ride, onStatusChange }: { ride: Ride; onStatusChange: (id: string | number, status: FinancialStatus) => void }) {
@@ -122,42 +122,46 @@ function RidesTable({
           <table className="admin-table">
             <thead>
               <tr>
-                <th className="cursor-pointer hover:text-admin-text transition" onClick={() => onSort("client")}>
+                <th className="cursor-pointer hover:text-admin-text transition px-4" onClick={() => onSort("client")}>
                   <div className="flex items-center">Cliente <SortIcon field="client" /></div>
                 </th>
-                <th className="cursor-pointer hover:text-admin-text transition" onClick={() => onSort("origin")}>
+                <th className="cursor-pointer hover:text-admin-text transition px-4" onClick={() => onSort("origin")}>
                   <div className="flex items-center">Origem <SortIcon field="origin" /></div>
                 </th>
-                <th className="cursor-pointer hover:text-admin-text transition" onClick={() => onSort("destination")}>
+                <th className="cursor-pointer hover:text-admin-text transition px-4" onClick={() => onSort("destination")}>
                   <div className="flex items-center">Destino <SortIcon field="destination" /></div>
                 </th>
-                <th className="cursor-pointer hover:text-admin-text transition" onClick={() => onSort("date")}>
+                <th className="cursor-pointer hover:text-admin-text transition px-4" onClick={() => onSort("date")}>
                   <div className="flex items-center">Data Corrida <SortIcon field="date" /></div>
                 </th>
-                <th className="cursor-pointer hover:text-admin-text transition" onClick={() => onSort("created_at")}>
+                <th className="cursor-pointer hover:text-admin-text transition px-4" onClick={() => onSort("created_at")}>
                   <div className="flex items-center">Data Registrada <SortIcon field="created_at" /></div>
                 </th>
-                <th className="cursor-pointer hover:text-admin-text transition text-right" onClick={() => onSort("price")}>
+                <th className="cursor-pointer hover:text-admin-text transition px-4 text-right" onClick={() => onSort("price")}>
                   <div className="flex items-center justify-end">Valor <SortIcon field="price" /></div>
                 </th>
-                <th>Status Financeiro</th>
-                <th>Status</th>
+                <th className="cursor-pointer hover:text-admin-text transition px-4" onClick={() => onSort("financial_status")}>
+                  <div className="flex items-center">Status Financeiro <SortIcon field="financial_status" /></div>
+                </th>
+                <th className="cursor-pointer hover:text-admin-text transition px-4" onClick={() => onSort("status")}>
+                  <div className="flex items-center">Status <SortIcon field="status" /></div>
+                </th>
               </tr>
             </thead>
             <tbody>
               {items.map((ride) => (
                 <tr key={ride.id}>
-                  <td>
+                  <td className="px-4">
                     <Link href={`/admin/rides/${ride.id}`} className="text-admin-text font-medium hover:text-admin-silver transition">
                       {ride.client?.name ?? "—"}
                     </Link>
                   </td>
-                  <td className="text-admin-text-dim">{ride.origin}</td>
-                  <td className="text-admin-text-dim">{ride.destination}</td>
-                  <td className="text-admin-text-dim">{formatDate(ride.scheduled_at)}</td>
-                  <td className="text-admin-text-dim">{formatDateTime(ride.created_at)}</td>
-                  <td className="text-admin-silver font-bold text-right">{formatCurrency(ride.price, ride.currency)}</td>
-                  <td>
+                  <td className="text-admin-text-dim px-4">{ride.origin}</td>
+                  <td className="text-admin-text-dim px-4">{ride.destination}</td>
+                  <td className="text-admin-text-dim px-4">{formatDate(ride.scheduled_at)}</td>
+                  <td className="text-admin-text-dim px-4">{formatDateTime(ride.created_at)}</td>
+                  <td className="text-admin-silver font-bold text-right px-4">{formatCurrency(ride.price, ride.currency)}</td>
+                  <td className="px-4">
                     <select
                       value={ride.financial_status ?? "pending"}
                       onChange={(e) => onStatusChange(ride.id, e.target.value as FinancialStatus)}
@@ -168,7 +172,7 @@ function RidesTable({
                       ))}
                     </select>
                   </td>
-                  <td>
+                  <td className="px-4">
                     <span className={`text-[10px] px-2.5 py-1 rounded-full border uppercase tracking-widest font-medium ${statusBadgeClasses[ride.status]}`}>
                       {statusLabels[ride.status]}
                     </span>
@@ -272,6 +276,10 @@ export default function RidesPage() {
         return order * (new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
       case "price":
         return order * (Number(a.price) - Number(b.price));
+      case "status":
+        return order * (statusLabels[a.status] || "").localeCompare(statusLabels[b.status] || "");
+      case "financial_status":
+        return order * (financialStatusLabels[a.financial_status ?? "pending"] || "").localeCompare(financialStatusLabels[b.financial_status ?? "pending"] || "");
       default:
         return 0;
     }

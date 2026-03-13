@@ -12,6 +12,9 @@ import {
   HandCoins,
   DollarSign,
   Percent,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 import { formatCurrency, formatDate, formatDateTime } from "@/lib/formatters";
 import type { FinancialStatus } from "@/lib/formatters";
@@ -40,6 +43,9 @@ const allStatuses: FinancialStatus[] = [
   "paid_to_partner",
 ];
 
+type SortField = "id" | "client" | "date" | "created_at" | "price" | "financial_status";
+type SortOrder = "asc" | "desc";
+
 export default function FinanceiroPage() {
   const supabase = createClient();
   const [allRides, setAllRides] = useState<Ride[]>([]);
@@ -47,6 +53,11 @@ export default function FinanceiroPage() {
   const [period, setPeriod] = useState<PeriodKey>("30dias");
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
+  
+  const [sortConfig, setSortConfig] = useState<{ field: SortField; order: SortOrder }>({
+    field: "created_at",
+    order: "desc",
+  });
 
   const fetchRides = useCallback(async () => {
     const { data, error } = await supabase
@@ -106,6 +117,39 @@ export default function FinanceiroPage() {
     );
   }
 
+  const handleSort = (field: SortField) => {
+    setSortConfig((prev) => ({
+      field,
+      order: prev.field === field && prev.order === "asc" ? "desc" : "asc",
+    }));
+  };
+
+  const sortedPending = [...pendingRides].sort((a, b) => {
+    const order = sortConfig.order === "asc" ? 1 : -1;
+    
+    switch (sortConfig.field) {
+      case "id":
+        return order * String(a.id).localeCompare(String(b.id));
+      case "client":
+        return order * (a.client?.name ?? "").localeCompare(b.client?.name ?? "");
+      case "date":
+        return order * (new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime());
+      case "created_at":
+        return order * (new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+      case "price":
+        return order * (Number(a.price) - Number(b.price));
+      case "financial_status":
+        return order * (financialStatusLabels[a.financial_status ?? "pending"] || "").localeCompare(financialStatusLabels[b.financial_status ?? "pending"] || "");
+      default:
+        return 0;
+    }
+  });
+
+  const SortIcon = ({ field }: { field: SortField }) => {
+    if (sortConfig.field !== field) return <ArrowUpDown className="h-3 w-3 ml-1 opacity-30" />;
+    return sortConfig.order === "asc" ? <ArrowUp className="h-3 w-3 ml-1 text-admin-silver" /> : <ArrowDown className="h-3 w-3 ml-1 text-admin-silver" />;
+  };
+
   if (loading) return <p className="text-admin-muted text-center py-8">Carregando...</p>;
 
   return (
@@ -123,7 +167,7 @@ export default function FinanceiroPage() {
         />
       </div>
 
-      {/* Summary cards - Stack on mobile, 3 columns on desktop */}
+      {/* Summary cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
         <div className="stat-card !p-5">
           <div className="flex items-center justify-between mb-2">
@@ -148,7 +192,7 @@ export default function FinanceiroPage() {
         </div>
       </div>
 
-      {/* Status cards - Responsive grid instead of scroll */}
+      {/* Status cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 mb-8">
         {statCards.map((s) => (
           <div key={s.status} className="stat-card !p-4 overflow-hidden">
@@ -172,7 +216,7 @@ export default function FinanceiroPage() {
             <p className="text-admin-muted text-sm">Nenhuma pendência no período.</p>
           </div>
         ) : (
-          pendingRides.map((ride) => (
+          sortedPending.map((ride) => (
             <div key={ride.id} className="stat-card !p-5 space-y-4">
               <div className="flex items-start justify-between gap-3 pb-3 border-b border-white/5">
                 <div>
@@ -221,21 +265,33 @@ export default function FinanceiroPage() {
           <table className="admin-table">
             <thead>
               <tr>
-                <th className="px-6">ID</th>
-                <th className="px-6">Cliente</th>
-                <th className="px-6">Data Corrida</th>
-                <th className="px-6">Data registrada</th>
-                <th className="px-6 text-right">Valor</th>
-                <th className="px-6">Status Financeiro</th>
+                <th className="px-6 cursor-pointer hover:text-admin-text transition" onClick={() => handleSort("id")}>
+                  <div className="flex items-center">ID <SortIcon field="id" /></div>
+                </th>
+                <th className="px-6 cursor-pointer hover:text-admin-text transition" onClick={() => handleSort("client")}>
+                  <div className="flex items-center">Cliente <SortIcon field="client" /></div>
+                </th>
+                <th className="px-6 cursor-pointer hover:text-admin-text transition" onClick={() => handleSort("date")}>
+                  <div className="flex items-center">Data Corrida <SortIcon field="date" /></div>
+                </th>
+                <th className="px-6 cursor-pointer hover:text-admin-text transition" onClick={() => handleSort("created_at")}>
+                  <div className="flex items-center">Data registrada <SortIcon field="created_at" /></div>
+                </th>
+                <th className="px-6 text-right cursor-pointer hover:text-admin-text transition" onClick={() => handleSort("price")}>
+                  <div className="flex items-center justify-end">Valor <SortIcon field="price" /></div>
+                </th>
+                <th className="px-6 cursor-pointer hover:text-admin-text transition" onClick={() => handleSort("financial_status")}>
+                  <div className="flex items-center">Status Financeiro <SortIcon field="financial_status" /></div>
+                </th>
               </tr>
             </thead>
             <tbody>
-              {pendingRides.length === 0 ? (
+              {sortedPending.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="text-center text-admin-muted py-12">Nenhuma pendência no período.</td>
                 </tr>
               ) : (
-                pendingRides.map((ride) => (
+                sortedPending.map((ride) => (
                   <tr key={ride.id} className="hover:bg-white/[0.02] transition-colors">
                     <td className="px-6 py-5 text-admin-text font-medium">{ride.id}</td>
                     <td className="px-6 py-5 text-admin-text-dim">{ride.client?.name ?? "—"}</td>
