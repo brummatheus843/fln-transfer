@@ -7,12 +7,15 @@ import {
   statusLabels,
   type RideStatus,
   driverStatusOptions,
+  formatDate,
+  formatCurrency
 } from "@/lib/formatters";
-import { Pencil, History, User } from "lucide-react";
+import { Pencil, History, User, FileDown } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Ride, RideLog } from "@/lib/types";
 import { Modal } from "./Modal";
 import { useRouter } from "next/navigation";
+import jsPDF from "jspdf";
 
 const statusBadgeClasses: Record<RideStatus, string> = {
   scheduled: "bg-admin-blue/10 text-admin-blue border-admin-blue/20",
@@ -84,7 +87,6 @@ export function RideDetailsModal({ rideId, open, onClose, onUpdate, view }: Ride
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
     
-    // Tenta pegar o nome do perfil, se não existir usa o email ( fallback )
     const { data: profile } = await supabase.from("profiles").select("full_name").eq("id", user.id).single();
     
     await supabase.from("ride_logs").insert({
@@ -111,6 +113,149 @@ export function RideDetailsModal({ rideId, open, onClose, onUpdate, view }: Ride
     toast.success("Status atualizado!");
     fetchRide();
     if (onUpdate) onUpdate();
+  };
+
+  const generateVoucher = () => {
+    if (!ride) return;
+
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    
+    // Header
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(14);
+    doc.text("FLN TRANSFER EXECUTIVO & TURISMO", 14, 20);
+    
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text("50.890.100/0001-09", 14, 26);
+    doc.text("Florianópolis / Santa Catarina", 14, 32);
+
+    doc.text("Tel.: (48) 98822-2934", pageWidth - 14, 20, { align: "right" });
+    doc.text("contato@flntransferexecutivo.com.br", pageWidth - 14, 26, { align: "right" });
+    doc.text("Contato: +55 48 99967-2557", pageWidth - 14, 32, { align: "right" });
+
+    // Client Info
+    doc.setFontSize(12);
+    doc.text("Dados do Cliente", 14, 45);
+    doc.line(14, 47, pageWidth - 14, 47);
+
+    doc.setFontSize(10);
+    doc.text(ride.client?.name ?? "—", 14, 54);
+    const clientPhone = (ride.client as { phone?: string })?.phone || "—";
+    doc.text(`Tel.: ${clientPhone}`, 14, 60);
+    doc.text(`Data: ${formatDate(new Date().toISOString())}`, pageWidth - 14, 60, { align: "right" });
+
+    // OS Header
+    doc.setFillColor(200, 200, 200);
+    doc.rect(14, 66, pageWidth - 28, 8, "F");
+    doc.setFont("helvetica", "bold");
+    doc.text(`ORDEM DE SERVIÇO Nº ${ride.id}`, pageWidth / 2, 71, { align: "center" });
+
+    // Services Table
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "normal");
+    doc.text("Serviços", 14, 84);
+    doc.line(14, 86, pageWidth - 14, 86);
+
+    doc.setFontSize(9);
+    doc.setFillColor(240, 240, 240);
+    doc.rect(14, 88, pageWidth - 28, 6, "F");
+    doc.text("Nome", 16, 92);
+    doc.text("Quantidade", 110, 92);
+    doc.text("Unidade", 135, 92);
+    doc.text("Valor Unitário", 160, 92);
+    doc.text("Valor Total", 190, 92, { align: "right" });
+
+    doc.text(`${ride.origin} / ${ride.destination}`, 16, 100);
+    doc.text("1", 118, 100);
+    doc.text("un", 140, 100);
+    doc.text(formatCurrency(ride.price, ride.currency), 160, 100);
+    doc.text(formatCurrency(ride.price, ride.currency), 190, 100, { align: "right" });
+
+    doc.line(140, 105, pageWidth - 14, 105);
+    doc.text("Total Serviços", 140, 111);
+    doc.text(formatCurrency(ride.price, ride.currency), 190, 111, { align: "right" });
+
+    doc.text("Subtotal", 140, 120);
+    doc.text(formatCurrency(ride.price, ride.currency), 190, 120, { align: "right" });
+    doc.setFont("helvetica", "bold");
+    doc.text("Total", 140, 126);
+    doc.text(formatCurrency(ride.price, ride.currency), 190, 126, { align: "right" });
+
+    // Payments
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "normal");
+    doc.text("Pagamento(s)", 90, 140);
+    doc.line(90, 142, pageWidth - 14, 142);
+
+    doc.setFontSize(9);
+    doc.setFillColor(240, 240, 240);
+    doc.rect(90, 144, pageWidth - 104, 6, "F");
+    doc.text("Pagamento", 92, 148);
+    doc.text("Vencimento", 160, 148);
+    doc.text("Valor", 190, 148, { align: "right" });
+
+    doc.text(`${ride.origin} / ${ride.destination}`, 92, 156);
+    doc.text(`- ${formatDateTime(ride.scheduled_at)}`, 92, 161);
+    doc.text(formatDate(ride.scheduled_at), 160, 156);
+    doc.text(formatCurrency(ride.price, ride.currency), 190, 156, { align: "right" });
+
+    // Observations
+    doc.setFontSize(12);
+    doc.text("Observações", 14, 175);
+    doc.line(14, 177, pageWidth - 14, 177);
+
+    doc.setFontSize(9);
+    doc.text(`Transfer ${statusLabels[ride.status]}`, 14, 185);
+    doc.text(`Passageiro(a): ${ride.client?.name ?? "—"}`, 14, 190);
+    doc.text(`Data/Hora: ${formatDateTime(ride.scheduled_at)}`, 14, 195);
+    doc.text(`Motorista: ${ride.driver?.full_name ?? "A definir"}`, 14, 200);
+    doc.text(`Valor: ${formatCurrency(ride.price, ride.currency)}`, 14, 205);
+    doc.text(`Embarque: ${ride.origin}`, 14, 210);
+    doc.text(`Desembarque: ${ride.destination}`, 14, 215);
+    doc.text(`Passageiros: ${ride.pax_count} Pax`, 14, 220);
+    if (ride.notes) {
+      const splitNotes = doc.splitTextToSize(`Notas: ${ride.notes}`, pageWidth - 28);
+      doc.text(splitNotes, 14, 225);
+    }
+
+    // Signatures
+    doc.line(20, 260, 90, 260);
+    doc.setFont("helvetica", "bold");
+    doc.text("FLN TRANSFER EXECUTIVO & TURISMO", 55, 265, { align: "center" });
+    doc.setFont("helvetica", "normal");
+    doc.text("+55 48 99967-2557", 55, 270, { align: "center" });
+
+    doc.line(120, 260, 190, 260);
+    doc.text(ride.client?.name ?? "—", 155, 265, { align: "center" });
+
+    // Policy (Page 2 if needed, or small at bottom)
+    doc.addPage();
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "bold");
+    doc.text("POLÍTICA DE CANCELAMENTO, MODIFICAÇÃO E NÃO COMPARECIMENTO", 14, 20);
+    doc.setFont("helvetica", "normal");
+    const policyText = `Valorizamos a organização e a qualidade do serviço. Por isso, estabelecemos a seguinte política:
+
+Cancelamentos e alterações de dados ou horários:
+- Solicitados com 24 horas de antecedência: sem custo.
+- Solicitados com até 12 horas de antecedência: será cobrado 50% do valor do serviço.
+- Solicitados com até 6 horas de antecedência: será cobrado 100% do valor do serviço.
+
+Não comparecimento (no-show):
+Se o cliente não comparecer ao local e hora combinados sem aviso prévio, será considerado no-show e cobrado 100% do valor do serviço.
+
+Atraso ou cancelamento de voo:
+Em casos de atraso ou cancelamento do voo, não será cobrada taxa de no-show. Acompanhamos e ajustamos os horários sempre que possível.
+
+Agradecemos a compreensão e ficamos à disposição.`;
+
+    const splitPolicy = doc.splitTextToSize(policyText, pageWidth - 28);
+    doc.text(splitPolicy, 14, 28);
+
+    doc.save(`OrdemServico-${ride.id}.pdf`);
+    toast.success("Voucher gerado com sucesso!");
   };
 
   if (!open) return null;
@@ -196,6 +341,18 @@ export function RideDetailsModal({ rideId, open, onClose, onUpdate, view }: Ride
               )}
             </div>
           </div>
+
+          {/* Botão VOUCHER */}
+          <div className="pt-6 mt-6 border-t border-white/5 w-full">
+            <button
+              onClick={generateVoucher}
+              className="w-full bg-admin-card border border-admin-border text-admin-silver hover:bg-white/5 hover:text-white rounded-xl py-4 font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-all shadow-lg"
+            >
+              <FileDown className="h-5 w-5" />
+              Gerar Voucher
+            </button>
+          </div>
+
         </div>
       ) : (
         <div className="py-8 text-center text-admin-muted">Não foi possível carregar os dados.</div>
