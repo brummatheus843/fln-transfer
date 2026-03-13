@@ -7,6 +7,8 @@ import { ptBR } from "date-fns/locale/pt-BR";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import { Plus, ChevronLeft, ChevronRight, MapPin, Clock, Users } from "lucide-react";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { statusLabels, statusColors, formatCurrency } from "@/lib/formatters";
 import type { RideStatus } from "@/lib/formatters";
 import { createClient } from "@/lib/supabase/client";
@@ -29,7 +31,7 @@ const statusBorderColors: Record<RideStatus, string> = {
   cancelled: "rgba(239,68,68,0.5)",
 };
 
-type CalendarEvent = { title: string; start: Date; end: Date; status: RideStatus };
+type CalendarEvent = { id: string | number; title: string; start: Date; end: Date; status: RideStatus };
 
 const WEEKDAYS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
@@ -125,33 +127,35 @@ function MobileAgenda({
       ) : (
         <div className="space-y-2.5">
           {dayRides.map((ride) => (
-            <div key={ride.id} className="bg-admin-card border border-admin-border rounded-xl p-3.5 space-y-2">
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex items-center gap-2 min-w-0">
-                  <div className="flex items-center gap-1 shrink-0">
-                    <Clock className="h-3.5 w-3.5 text-admin-silver" />
-                    <span className="text-sm font-bold text-admin-silver">{format(new Date(ride.scheduled_at), "HH:mm")}</span>
+            <Link key={ride.id} href={`/admin/rides/${ride.id}`} className="block">
+              <div className="bg-admin-card border border-admin-border rounded-xl p-3.5 space-y-2 hover:bg-admin-card-hover transition-colors">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Clock className="h-3.5 w-3.5 text-admin-silver" />
+                      <span className="text-sm font-bold text-admin-silver">{format(new Date(ride.scheduled_at), "HH:mm")}</span>
+                    </div>
+                    <span className="text-sm font-medium text-admin-text truncate">{ride.client?.name ?? "—"}</span>
                   </div>
-                  <span className="text-sm font-medium text-admin-text truncate">{ride.client?.name ?? "—"}</span>
+                  <span className={`text-[9px] px-2 py-0.5 rounded-full border uppercase tracking-widest font-medium whitespace-nowrap shrink-0 ${statusColors[ride.status]}`}>
+                    {statusLabels[ride.status]}
+                  </span>
                 </div>
-                <span className={`text-[9px] px-2 py-0.5 rounded-full border uppercase tracking-widest font-medium whitespace-nowrap shrink-0 ${statusColors[ride.status]}`}>
-                  {statusLabels[ride.status]}
-                </span>
-              </div>
-              <div className="flex items-center gap-1.5 text-xs text-admin-text-dim">
-                <MapPin className="h-3 w-3 shrink-0 text-admin-muted" />
-                <span className="truncate">{ride.origin} → {ride.destination}</span>
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <div className="flex items-center gap-1 text-admin-muted">
-                  <Users className="h-3 w-3" />
-                  <span>{ride.pax_count} pax</span>
+                <div className="flex items-center gap-1.5 text-xs text-admin-text-dim">
+                  <MapPin className="h-3 w-3 shrink-0 text-admin-muted" />
+                  <span className="truncate">{ride.origin} → {ride.destination}</span>
                 </div>
-                {Number(ride.price) > 0 && (
-                  <span className="font-bold text-admin-silver">{formatCurrency(Number(ride.price), ride.currency)}</span>
-                )}
+                <div className="flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-1 text-admin-muted">
+                    <Users className="h-3 w-3" />
+                    <span>{ride.pax_count} pax</span>
+                  </div>
+                  {Number(ride.price) > 0 && (
+                    <span className="font-bold text-admin-silver">{formatCurrency(Number(ride.price), ride.currency)}</span>
+                  )}
+                </div>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       )}
@@ -162,6 +166,7 @@ function MobileAgenda({
 // ── Main Page ──
 export default function AgendaPage() {
   const supabase = createClient();
+  const router = useRouter();
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [rides, setRides] = useState<Ride[]>([]);
   const [showRideModal, setShowRideModal] = useState(false);
@@ -184,6 +189,7 @@ export default function AgendaPage() {
       const end = new Date(start);
       end.setHours(end.getHours() + 1);
       return {
+        id: r.id,
         title: `${r.client?.name ?? "—"} — ${r.origin} → ${r.destination}`,
         start,
         end,
@@ -206,10 +212,15 @@ export default function AgendaPage() {
         color: "#e0e0e0",
         borderRadius: "4px",
         fontSize: "11px",
+        cursor: "pointer",
       },
     }),
     []
   );
+
+  const onSelectEvent = useCallback((event: CalendarEvent) => {
+    router.push(`/admin/rides/${event.id}`);
+  }, [router]);
 
   if (loading) return <p className="text-admin-muted text-center py-8">Carregando...</p>;
 
@@ -259,6 +270,7 @@ export default function AgendaPage() {
             style={{ height: 600 }}
             culture="pt-BR"
             eventPropGetter={eventStyleGetter}
+            onSelectEvent={onSelectEvent}
             views={["month", "week", "day"]}
             defaultView="month"
           />

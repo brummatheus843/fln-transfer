@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
+import Link from "next/link";
 import {
   formatDate,
   formatTime,
@@ -14,31 +15,33 @@ import type { Ride } from "@/lib/types";
 
 function RideCard({ ride }: { ride: Ride }) {
   return (
-    <div className="bg-admin-card border border-admin-border rounded-xl p-4 space-y-2">
-      <div className="flex items-center justify-between">
-        <span className="text-lg font-semibold text-admin-silver">
-          {formatTime(ride.scheduled_at)}
-        </span>
-        <span
-          className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${statusColors[ride.status]}`}
-        >
-          {statusLabels[ride.status]}
-        </span>
+    <Link href={`/driver/rides/${ride.id}`} className="block">
+      <div className="bg-admin-card border border-admin-border rounded-xl p-4 space-y-2 hover:bg-admin-card-hover transition-colors">
+        <div className="flex items-center justify-between">
+          <span className="text-lg font-semibold text-admin-silver">
+            {formatTime(ride.scheduled_at)}
+          </span>
+          <span
+            className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${statusColors[ride.status]}`}
+          >
+            {statusLabels[ride.status]}
+          </span>
+        </div>
+        <p className="font-medium text-admin-text">{ride.client?.name ?? "—"}</p>
+        <div className="flex items-start gap-2 text-sm text-admin-text-dim">
+          <MapPin className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>
+            {ride.origin} &rarr; {ride.destination}
+          </span>
+        </div>
+        <div className="flex items-center gap-2 text-sm text-admin-text-dim">
+          <Users className="h-4 w-4" />
+          <span>
+            {ride.pax_count} passageiro{ride.pax_count > 1 ? "s" : ""}
+          </span>
+        </div>
       </div>
-      <p className="font-medium text-admin-text">{ride.client?.name ?? "—"}</p>
-      <div className="flex items-start gap-2 text-sm text-admin-text-dim">
-        <MapPin className="mt-0.5 h-4 w-4 shrink-0" />
-        <span>
-          {ride.origin} &rarr; {ride.destination}
-        </span>
-      </div>
-      <div className="flex items-center gap-2 text-sm text-admin-text-dim">
-        <Users className="h-4 w-4" />
-        <span>
-          {ride.pax_count} passageiro{ride.pax_count > 1 ? "s" : ""}
-        </span>
-      </div>
-    </div>
+    </Link>
   );
 }
 
