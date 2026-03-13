@@ -81,9 +81,19 @@ function MobileAgenda({
         <button onClick={() => setWeekStart((p) => addDays(p, -7))} className="p-2 rounded-lg text-admin-muted hover:text-admin-text hover:bg-admin-card transition">
           <ChevronLeft className="h-5 w-5" />
         </button>
-        <span className="text-sm font-medium text-admin-text">
+        <button 
+          onClick={() => {
+            const now = new Date();
+            const start = new Date(now);
+            start.setDate(now.getDate() - now.getDay());
+            start.setHours(0, 0, 0, 0);
+            setWeekStart(start);
+            onSelectDate(new Date());
+          }}
+          className="text-sm font-medium text-admin-text hover:text-admin-silver transition-colors"
+        >
           {format(weekDays[0], "dd MMM", { locale: ptBR })} — {format(weekDays[6], "dd MMM yyyy", { locale: ptBR })}
-        </span>
+        </button>
         <button onClick={() => setWeekStart((p) => addDays(p, 7))} className="p-2 rounded-lg text-admin-muted hover:text-admin-text hover:bg-admin-card transition">
           <ChevronRight className="h-5 w-5" />
         </button>
