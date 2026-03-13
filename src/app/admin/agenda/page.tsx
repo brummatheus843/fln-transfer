@@ -142,9 +142,14 @@ function MobileAgenda({
                     </div>
                     <span className="text-sm font-medium text-admin-text truncate">{ride.client?.name ?? "—"}</span>
                   </div>
-                  <span className={`text-[9px] px-2 py-0.5 rounded-full border uppercase tracking-widest font-medium whitespace-nowrap shrink-0 ${statusColors[ride.status]}`}>
-                    {statusLabels[ride.status]}
-                  </span>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span className="text-[9px] px-2 py-0.5 rounded-full border border-admin-silver/30 bg-admin-silver/5 text-admin-silver uppercase font-bold">
+                      {ride.driver_status === "Em deslocamento para embarque" ? "Em desloc. p/ embarque" : (ride.driver_status || "Pendente")}
+                    </span>
+                    <span className={`text-[9px] px-2 py-0.5 rounded-full border uppercase tracking-widest font-medium whitespace-nowrap ${statusColors[ride.status]}`}>
+                      {statusLabels[ride.status]}
+                    </span>
+                  </div>
                 </div>
                 <div className="flex items-center gap-1.5 text-xs text-admin-text-dim">
                   <MapPin className="h-3 w-3 shrink-0 text-admin-muted" />

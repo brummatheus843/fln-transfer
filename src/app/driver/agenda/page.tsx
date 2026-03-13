@@ -22,8 +22,8 @@ function RideCard({ ride, onClick }: { ride: Ride; onClick: () => void }) {
             {formatTime(ride.scheduled_at)}
           </span>
           <div className="flex items-center gap-2">
-            <span className="text-[10px] px-2 py-0.5 rounded-full border border-admin-silver/30 bg-admin-silver/10 text-admin-silver uppercase font-bold">
-              {ride.driver_status || "Pendente"}
+            <span className="text-[10px] px-2 py-0.5 rounded-full border border-admin-silver/30 bg-admin-silver/5 text-admin-silver uppercase font-bold">
+              {ride.driver_status === "Em deslocamento para embarque" ? "Em desloc. p/ embarque" : (ride.driver_status || "Pendente")}
             </span>
             <span
               className={`rounded-full px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-widest border ${statusColors[ride.status]}`}
