@@ -37,7 +37,7 @@ export default function DriversPage() {
   const fetchData = useCallback(async () => {
     const [drRes, prRes] = await Promise.all([
       supabase.from("drivers").select("*").order("full_name"),
-      supabase.from("profiles").select("*").eq("role", "driver").order("full_name")
+      supabase.from("profiles").select("*").order("full_name")
     ]);
     
     if (drRes.error) toast.error("Erro ao carregar motoristas");
