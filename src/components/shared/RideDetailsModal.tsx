@@ -15,7 +15,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { Ride, RideLog } from "@/lib/types";
 import { Modal } from "./Modal";
 import { useRouter } from "next/navigation";
-import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
+import { PDFDocument } from "pdf-lib";
 
 const statusBadgeClasses: Record<RideStatus, string> = {
   scheduled: "bg-admin-blue/10 text-admin-blue border-admin-blue/20",
@@ -54,7 +54,7 @@ export function RideDetailsModal({ rideId, open, onClose, onUpdate, view }: Ride
     const [rideRes, logRes] = await Promise.all([
       supabase
         .from("rides")
-        .select("*, client:clients(name, phone), driver:drivers(full_name), agency:agencies(name)")
+        .select("*, client:clients(name, phone), driver:drivers(full_name, vehicle_model, license_plate), agency:agencies(name)")
         .eq("id", rideId)
         .single(),
       supabase
@@ -107,90 +107,41 @@ export function RideDetailsModal({ rideId, open, onClose, onUpdate, view }: Ride
 
   const generateVoucher = async () => {
     if (!ride) return;
-    const toastId = toast.loading("Gerando voucher 100% fiel...");
+    const toastId = toast.loading("Preenchendo seu modelo de voucher...");
 
     try {
-      // 1. Carregar o arquivo original do diretório public
       const templateUrl = "/voucher-template.pdf";
       const existingPdfBytes = await fetch(templateUrl).then(res => res.arrayBuffer());
-
       const pdfDoc = await PDFDocument.load(existingPdfBytes);
-      const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
-      const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-      const pages = pdfDoc.getPages();
-      const firstPage = pages[0];
+      const form = pdfDoc.getForm();
 
-      // Função para apagar o texto original do modelo (caixa branca)
-      const mask = (x: number, y: number, width: number, height: number) => {
-        firstPage.drawRectangle({ x, y, width, height, color: rgb(1, 1, 1) });
+      const safeSet = (fieldName: string, value: string) => {
+        try {
+          const field = form.getTextField(fieldName);
+          field.setText(value);
+        } catch (e) {
+          console.warn(`Campo '${fieldName}' não encontrado no PDF.`);
+        }
       };
 
-      // Escreve o novo texto
-      const write = (text: string, x: number, y: number, size = 9, font = helveticaFont, color = rgb(0, 0, 0)) => {
-        firstPage.drawText(text, { x, y, size, font, color });
-      };
+      // Preenchimento Automático dos Campos do AcroForm
+      safeSet("id_corrida", String(ride.id));
+      safeSet("data_corrida", formatDate(ride.scheduled_at));
+      safeSet("hora_corrida", new Date(ride.scheduled_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }));
+      safeSet("cliente_nome", ride.client?.name ?? "");
+      safeSet("cliente_telefone", (ride.client as { phone?: string })?.phone ?? "");
+      safeSet("origem", ride.origin);
+      safeSet("destino", ride.destination);
+      safeSet("pax", `${ride.pax_count} Pax`);
+      safeSet("valor_total", formatCurrency(ride.price, ride.currency));
+      safeSet("motorista_nome", ride.driver?.full_name ?? "");
+      safeSet("veiculo_modelo", ride.driver?.vehicle_model ?? "");
+      safeSet("veiculo_placa", ride.driver?.license_plate ?? "");
+      safeSet("observacoes", ride.notes ?? "");
+      safeSet("data_registro", formatDateTime(ride.created_at));
 
-      // --- MAPEAMENTO DE CAMPOS ---
-
-      // 1. Dados do Cliente
-      mask(40, 720, 250, 15); // Apaga "Beatriz Splendiani"
-      write(ride.client?.name ?? "—", 45, 724, 10, helveticaBold);
-      
-      mask(40, 705, 150, 12); // Apaga o telefone original
-      const clientPhone = (ride.client as { phone?: string })?.phone || "—";
-      write(`Tel.: ${clientPhone}`, 45, 708, 9);
-      
-      // 2. Data (Topo Direito)
-      mask(480, 705, 80, 15); // Apaga "12/03/2026"
-      write(formatDate(new Date().toISOString()), 500, 708, 9);
-
-      // 3. Nº Ordem de Serviço (No centro da barra cinza)
-      firstPage.drawRectangle({ x: 330, y: 683, width: 100, height: 12, color: rgb(0.6, 0.6, 0.6) });
-      const osText = `ORDEM DE SERVIÇO Nº ${ride.id}`;
-      const osWidth = helveticaBold.widthOfTextAtSize(osText, 11);
-      write(osText, 330 + (100 - osWidth) / 2, 685, 11, helveticaBold, rgb(1, 1, 1));
-
-      // 4. Tabela de Serviços (Linha 1)
-      mask(40, 640, 520, 15); // Limpa a linha inteira da tabela
-      const serviceName = `${ride.origin} / ${ride.destination}`;
-      write(serviceName.substring(0, 60), 45, 643, 9);
-      write("1", 315, 643, 9);
-      write("un", 375, 643, 9);
-      write(formatCurrency(ride.price, ride.currency), 435, 643, 9);
-      write(formatCurrency(ride.price, ride.currency), 550, 643, 9, helveticaFont, rgb(0,0,0)); // Valor Total (alinhado direita)
-
-      // 5. Totais (Lado Direito)
-      mask(500, 610, 80, 15); // Total Serviços
-      write(formatCurrency(ride.price, ride.currency), 550, 613, 9);
-      mask(500, 590, 80, 15); // Subtotal
-      write(formatCurrency(ride.price, ride.currency), 550, 593, 9);
-      mask(500, 570, 80, 15); // Total Final
-      write(formatCurrency(ride.price, ride.currency), 550, 576, 10, helveticaBold);
-
-      // 6. Bloco de Pagamento
-      mask(260, 510, 300, 30); // Limpa descrição e valores do pagamento
-      write(serviceName.substring(0, 45), 260, 525, 8);
-      write(`- ${formatDateTime(ride.scheduled_at)}`, 260, 515, 8);
-      write(formatDate(ride.scheduled_at), 435, 525, 9);
-      write(formatCurrency(ride.price, ride.currency), 550, 525, 9);
-
-      // 7. Observações (Lista de detalhes)
-      mask(40, 180, 520, 70); // Limpa o bloco de observações inteiro
-      let obsY = 225;
-      const addObsLine = (txt: string) => { write(txt, 45, obsY, 8.5); obsY -= 12; };
-      addObsLine(`Transfer ${statusLabels[ride.status]}`);
-      addObsLine(`Passageiro(a): ${ride.client?.name ?? "—"}`);
-      addObsLine(`Data/Hora: ${formatDateTime(ride.scheduled_at)}`);
-      addObsLine(`Motorista: ${ride.driver?.full_name ?? "A definir"}`);
-      addObsLine(`Valor: ${formatCurrency(ride.price, ride.currency)}`);
-      addObsLine(`Embarque: ${ride.origin}`);
-      addObsLine(`Desembarque: ${ride.destination}`);
-      addObsLine(`Pax: ${ride.pax_count}`);
-      if (ride.notes) addObsLine(`Notas: ${ride.notes.substring(0, 80)}`);
-
-      // 8. Assinatura do Cliente
-      mask(400, 305, 180, 15); // Limpa o nome antigo sob a linha
-      write(ride.client?.name ?? "—", 430, 308, 9, helveticaBold);
+      // Achatar campos para que não sejam mais editáveis no arquivo final
+      form.flatten();
 
       const pdfBytes = await pdfDoc.save();
       // @ts-expect-error - Compatibilidade Blob
@@ -200,10 +151,10 @@ export function RideDetailsModal({ rideId, open, onClose, onUpdate, view }: Ride
       link.download = `OrdemServico-${ride.id}.pdf`;
       link.click();
 
-      toast.success("Voucher 100% fiel gerado!", { id: toastId });
+      toast.success("Voucher preenchido com sucesso!", { id: toastId });
     } catch (error) {
       console.error(error);
-      toast.error("Erro ao processar modelo original", { id: toastId });
+      toast.error("Erro ao processar modelo AcroForm", { id: toastId });
     }
   };
 
