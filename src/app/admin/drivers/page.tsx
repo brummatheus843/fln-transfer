@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Driver } from "@/lib/types";
+import { Modal } from "@/components/shared/Modal";
 
 const inputClass =
   "w-full bg-admin-card border border-admin-border rounded-lg px-3 py-2 text-sm text-admin-text focus:outline-none focus:border-admin-silver/50";
@@ -91,82 +92,77 @@ export default function DriversPage() {
         </button>
       </div>
 
-      {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-admin-dark border border-admin-border rounded-2xl w-full max-w-md p-6 animate-fade-in">
-            <h3 className="text-lg font-bold text-admin-text mb-4">Novo Motorista</h3>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="text-[10px] text-admin-muted uppercase tracking-widest mb-1.5 block">Nome Completo</label>
-                <input
-                  required
-                  className={inputClass}
-                  value={form.full_name}
-                  onChange={(e) => setForm({ ...form, full_name: e.target.value })}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-[10px] text-admin-muted uppercase tracking-widest mb-1.5 block">Telefone</label>
-                  <input
-                    className={inputClass}
-                    value={form.phone}
-                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label className="text-[10px] text-admin-muted uppercase tracking-widest mb-1.5 block">CPF</label>
-                  <input
-                    className={inputClass}
-                    value={form.cpf}
-                    onChange={(e) => setForm({ ...form, cpf: e.target.value })}
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-[10px] text-admin-muted uppercase tracking-widest mb-1.5 block">Veículo (Opcional)</label>
-                  <input
-                    className={inputClass}
-                    value={form.vehicle_model}
-                    onChange={(e) => setForm({ ...form, vehicle_model: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label className="text-[10px] text-admin-muted uppercase tracking-widest mb-1.5 block">Placa (Opcional)</label>
-                  <input
-                    className={inputClass}
-                    value={form.license_plate}
-                    onChange={(e) => setForm({ ...form, license_plate: e.target.value })}
-                  />
-                </div>
-              </div>
-              <div className="flex items-center gap-2 py-2">
-                <input
-                  type="checkbox"
-                  id="active"
-                  checked={form.active}
-                  onChange={(e) => setForm({ ...form, active: e.target.checked })}
-                  className="rounded border-admin-border bg-admin-card text-admin-silver focus:ring-admin-silver/20"
-                />
-                <label htmlFor="active" className="text-sm text-admin-text">Motorista Ativo</label>
-              </div>
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setOpen(false)}
-                  className="flex-1 bg-admin-card border border-admin-border text-admin-text-dim hover:text-admin-text rounded-lg py-2 text-sm transition"
-                >
-                  Cancelar
-                </button>
-                <button type="submit" className="flex-1 btn-admin py-2 text-sm">
-                  Salvar
-                </button>
-              </div>
-            </form>
+      <Modal open={open} onClose={() => setOpen(false)} title="Novo Motorista" maxWidth="max-w-md">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="text-[10px] text-admin-muted uppercase tracking-widest mb-1.5 block">Nome Completo</label>
+            <input
+              required
+              className={inputClass}
+              value={form.full_name}
+              onChange={(e) => setForm({ ...form, full_name: e.target.value })}
+            />
           </div>
-        </div>
-      )}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="text-[10px] text-admin-muted uppercase tracking-widest mb-1.5 block">Telefone</label>
+              <input
+                className={inputClass}
+                value={form.phone}
+                onChange={(e) => setForm({ ...form, phone: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="text-[10px] text-admin-muted uppercase tracking-widest mb-1.5 block">CPF</label>
+              <input
+                className={inputClass}
+                value={form.cpf}
+                onChange={(e) => setForm({ ...form, cpf: e.target.value })}
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="text-[10px] text-admin-muted uppercase tracking-widest mb-1.5 block">Veículo (Opcional)</label>
+              <input
+                className={inputClass}
+                value={form.vehicle_model}
+                onChange={(e) => setForm({ ...form, vehicle_model: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="text-[10px] text-admin-muted uppercase tracking-widest mb-1.5 block">Placa (Opcional)</label>
+              <input
+                className={inputClass}
+                value={form.license_plate}
+                onChange={(e) => setForm({ ...form, license_plate: e.target.value })}
+              />
+            </div>
+          </div>
+          <div className="flex items-center gap-2 py-2">
+            <input
+              type="checkbox"
+              id="active"
+              checked={form.active}
+              onChange={(e) => setForm({ ...form, active: e.target.checked })}
+              className="rounded border-admin-border bg-admin-card text-admin-silver focus:ring-admin-silver/20"
+            />
+            <label htmlFor="active" className="text-sm text-admin-text">Motorista Ativo</label>
+          </div>
+          <div className="flex gap-3 pt-4">
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              className="flex-1 bg-admin-card border border-admin-border text-admin-text-dim hover:text-admin-text rounded-lg py-3 text-sm transition"
+            >
+              Cancelar
+            </button>
+            <button type="submit" className="flex-1 btn-admin py-3 text-sm font-bold">
+              Salvar
+            </button>
+          </div>
+        </form>
+      </Modal>
 
       {loading ? (
         <p className="text-admin-muted text-center py-8">Carregando...</p>
