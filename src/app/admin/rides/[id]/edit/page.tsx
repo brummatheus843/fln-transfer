@@ -4,8 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
-import type { Ride, Client, Driver, Agency } from "@/lib/types";
-import { Modal } from "@/components/shared/Modal";
+import type { Client, Driver, Agency } from "@/lib/types";
 
 const inputClass =
   "w-full bg-admin-card border border-admin-border rounded-lg px-3 py-2 text-sm text-admin-text focus:outline-none focus:border-admin-silver/50";
