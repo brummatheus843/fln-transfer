@@ -107,40 +107,51 @@ export function RideDetailsModal({ rideId, open, onClose, onUpdate, view }: Ride
 
   const generateVoucher = async () => {
     if (!ride) return;
-    const toastId = toast.loading("Gerando voucher fiel ao original...");
+    const toastId = toast.loading("Gerando voucher limpo...");
 
     try {
-      // 1. Carregar o arquivo original
       const templateUrl = "/voucher-template.pdf";
       const existingPdfBytes = await fetch(templateUrl).then(res => res.arrayBuffer());
 
-      // 2. Criar documento a partir do original
       const pdfDoc = await PDFDocument.load(existingPdfBytes);
       const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
       const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
       const pages = pdfDoc.getPages();
       const firstPage = pages[0];
 
-      // Definição de coordenadas baseadas na análise visual do seu modelo
+      // Função auxiliar para limpar área antes de escrever
+      const clearArea = (x: number, y: number, width: number, height: number) => {
+        firstPage.drawRectangle({
+          x,
+          y: y - 2,
+          width,
+          height: height + 4,
+          color: rgb(1, 1, 1),
+        });
+      };
+
       const drawText = (text: string, x: number, y: number, size = 9, font = helveticaFont) => {
         firstPage.drawText(text, { x, y, size, font, color: rgb(0, 0, 0) });
       };
 
-      // Limpar campos originais (desenhando retângulos brancos por cima se necessário)
-      // No seu caso, vamos apenas escrever por cima, pois os campos estarão vazios ou queremos substituir.
-      
-      // Nome Cliente e Tel
+      // 1. Limpar e preencher Dados do Cliente
+      clearArea(45, 720, 300, 15); // Nome
       drawText(ride.client?.name ?? "—", 45, 725, 10, helveticaBold);
+      
+      clearArea(45, 705, 200, 12); // Tel
       const clientPhone = (ride.client as { phone?: string })?.phone || "—";
       drawText(`Tel.: ${clientPhone}`, 45, 710, 9);
       
-      // Data emissão (Canto superior direito)
+      // 2. Limpar e preencher Data (Topo Direito)
+      clearArea(500, 705, 80, 15);
       drawText(formatDate(new Date().toISOString()), 500, 710, 9);
 
-      // Nº Ordem de Serviço (Centro)
+      // 3. Limpar e preencher Nº OS
+      clearArea(200, 680, 200, 15);
       drawText(`ORDEM DE SERVIÇO Nº ${ride.id}`, 240, 685, 11, helveticaBold);
 
-      // Tabela de Serviços
+      // 4. Limpar e preencher Tabela de Serviços
+      clearArea(16, 590, 550, 65); // Área total da tabela de serviços e totais
       const serviceName = `${ride.origin} / ${ride.destination}`;
       drawText(serviceName.substring(0, 60), 45, 645, 9);
       drawText("1", 310, 645, 9);
@@ -148,47 +159,48 @@ export function RideDetailsModal({ rideId, open, onClose, onUpdate, view }: Ride
       drawText(formatCurrency(ride.price, ride.currency), 430, 645, 9);
       drawText(formatCurrency(ride.price, ride.currency), 520, 645, 9);
 
-      // Totais
       drawText(formatCurrency(ride.price, ride.currency), 520, 615, 9); // Total Serviços
       drawText(formatCurrency(ride.price, ride.currency), 520, 595, 9); // Subtotal
       drawText(formatCurrency(ride.price, ride.currency), 520, 578, 10, helveticaBold); // Total
 
-      // Pagamento
+      // 5. Limpar e preencher Pagamento
+      clearArea(260, 510, 300, 25);
       drawText(serviceName.substring(0, 45), 260, 525, 8);
       drawText(`- ${formatDateTime(ride.scheduled_at)}`, 260, 515, 8);
       drawText(formatDate(ride.scheduled_at), 430, 525, 9);
       drawText(formatCurrency(ride.price, ride.currency), 520, 525, 9);
 
-      // Observações (Bloco Inferior)
-      let obsY = 445;
+      // 6. Limpar e preencher Observações
+      clearArea(14, 180, 550, 65); 
+      let obsY = 225;
       const drawObs = (txt: string) => { drawText(txt, 45, obsY, 8.5); obsY -= 12; };
       
-      drawObs(`Transfer ${statusLabels[ride.status]}`);
-      drawObs(`Passageiro(a): ${ride.client?.name ?? "—"}`);
-      drawObs(`Data/Hora: ${formatDateTime(ride.scheduled_at)}`);
-      drawObs(`Motorista: ${ride.driver?.full_name ?? "A definir"}`);
-      drawObs(`Valor: ${formatCurrency(ride.price, ride.currency)}`);
-      drawObs(`Embarque: ${ride.origin}`);
-      drawObs(`Desembarque: ${ride.destination}`);
       drawObs(`Pax: ${ride.pax_count}`);
+      drawObs(`Desembarque: ${ride.destination}`);
+      drawObs(`Embarque: ${ride.origin}`);
+      drawObs(`Valor: ${formatCurrency(ride.price, ride.currency)}`);
+      drawObs(`Motorista: ${ride.driver?.full_name ?? "A definir"}`);
+      drawObs(`Data/Hora: ${formatDateTime(ride.scheduled_at)}`);
+      drawObs(`Passageiro(a): ${ride.client?.name ?? "—"}`);
+      drawObs(`Transfer ${statusLabels[ride.status]}`);
       if (ride.notes) drawObs(`Notas: ${ride.notes.substring(0, 80)}`);
 
-      // Assinatura Cliente (Canto inferior direito)
+      // 7. Limpar e preencher Assinatura do Cliente
+      clearArea(400, 305, 180, 15);
       drawText(ride.client?.name ?? "—", 430, 310, 9, helveticaBold);
 
-      // 3. Salvar e baixar
       const pdfBytes = await pdfDoc.save();
-      // @ts-expect-error - Uint8Array is assignable to BlobPart in browser, but TS definitions vary
+      // @ts-expect-error - Compatibilidade de Blob no navegador
       const blob = new Blob([pdfBytes], { type: "application/pdf" });
       const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
       link.download = `OrdemServico-${ride.id}.pdf`;
       link.click();
 
-      toast.success("Voucher 100% fiel gerado!", { id: toastId });
+      toast.success("Voucher gerado com sucesso!", { id: toastId });
     } catch (error) {
       console.error(error);
-      toast.error("Erro ao processar modelo PDF", { id: toastId });
+      toast.error("Erro ao limpar e gerar PDF", { id: toastId });
     }
   };
 
