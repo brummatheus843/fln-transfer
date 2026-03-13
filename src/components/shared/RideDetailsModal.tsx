@@ -4,12 +4,11 @@ import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import {
   formatDateTime,
-  formatCurrency,
   statusLabels,
   type RideStatus,
   driverStatusOptions,
 } from "@/lib/formatters";
-import { Phone, Pencil, History, User } from "lucide-react";
+import { Pencil, History, User } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Ride, RideLog } from "@/lib/types";
 import { Modal } from "./Modal";
@@ -93,24 +92,6 @@ export function RideDetailsModal({ rideId, open, onClose, onUpdate, view }: Ride
       user_name: profile?.full_name || user.email,
       action
     });
-  };
-
-  const handleUpdateStatus = async (newStatus: RideStatus, extra: Record<string, string | null> = {}) => {
-    if (!rideId) return;
-    const { error } = await supabase
-      .from("rides")
-      .update({ status: newStatus, ...extra })
-      .eq("id", rideId);
-    
-    if (error) {
-      toast.error("Erro ao atualizar status");
-      return;
-    }
-    
-    await logChange(`Alterou situação para: ${statusLabels[newStatus]}`);
-    toast.success("Status atualizado!");
-    fetchRide();
-    if (onUpdate) onUpdate();
   };
 
   const handleDriverStatusChange = async (newDriverStatus: string) => {

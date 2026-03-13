@@ -7,7 +7,6 @@ import {
   Pencil,
   Trash2,
   Phone,
-  Car,
   FileText,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
