@@ -119,7 +119,7 @@ export function RideDetailsModal({ rideId, open, onClose, onUpdate, view }: Ride
         try {
           const field = form.getTextField(fieldName);
           field.setText(value);
-        } catch (e) {
+        } catch {
           console.warn(`Campo '${fieldName}' não encontrado no PDF.`);
         }
       };
