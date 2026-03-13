@@ -178,7 +178,7 @@ export function RideDetailsModal({ rideId, open, onClose, onUpdate, view }: Ride
 
       // 3. Salvar e baixar
       const pdfBytes = await pdfDoc.save();
-      // @ts-ignore - Uint8Array is assignable to BlobPart in browser, but TS definitions vary
+      // @ts-expect-error - Uint8Array is assignable to BlobPart in browser, but TS definitions vary
       const blob = new Blob([pdfBytes], { type: "application/pdf" });
       const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
