@@ -9,7 +9,6 @@ import {
   statusLabels,
   financialStatusLabels,
   type RideStatus,
-  type FinancialStatus,
 } from "@/lib/formatters";
 import { createClient } from "@/lib/supabase/client";
 import type { Ride } from "@/lib/types";
