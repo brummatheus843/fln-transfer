@@ -192,7 +192,7 @@ export function RideDetailsModal({ rideId, open, onClose, onUpdate, view }: Ride
       write(ride.client?.name ?? "—", 430, 308, 9, helveticaBold);
 
       // Helper para centralizar na barra
-      function pageWidthCenter(startX: number, width: number, text: string, size: number, font: any) {
+      function pageWidthCenter(startX: number, width: number, text: string, size: number, font: import('pdf-lib').PDFFont) {
         const textWidth = font.widthOfTextAtSize(text, size);
         return startX + (width - textWidth) / 2;
       }
