@@ -15,7 +15,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { Ride, RideLog } from "@/lib/types";
 import { Modal } from "./Modal";
 import { useRouter } from "next/navigation";
-import jsPDF from "jspdf";
+import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
 
 const statusBadgeClasses: Record<RideStatus, string> = {
   scheduled: "bg-admin-blue/10 text-admin-blue border-admin-blue/20",
@@ -86,9 +86,7 @@ export function RideDetailsModal({ rideId, open, onClose, onUpdate, view }: Ride
   const logChange = async (action: string) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    
     const { data: profile } = await supabase.from("profiles").select("full_name").eq("id", user.id).single();
-    
     await supabase.from("ride_logs").insert({
       ride_id: rideId,
       user_id: user.id,
@@ -99,163 +97,98 @@ export function RideDetailsModal({ rideId, open, onClose, onUpdate, view }: Ride
 
   const handleDriverStatusChange = async (newDriverStatus: string) => {
     if (!rideId) return;
-    const { error } = await supabase
-      .from("rides")
-      .update({ driver_status: newDriverStatus })
-      .eq("id", rideId);
-    
-    if (error) {
-      toast.error("Erro ao atualizar status");
-      return;
-    }
-    
+    const { error } = await supabase.from("rides").update({ driver_status: newDriverStatus }).eq("id", rideId);
+    if (error) { toast.error("Erro ao atualizar status"); return; }
     await logChange(`Alterou status para: ${newDriverStatus}`);
     toast.success("Status atualizado!");
     fetchRide();
     if (onUpdate) onUpdate();
   };
 
-  const generateVoucher = () => {
+  const generateVoucher = async () => {
     if (!ride) return;
+    const toastId = toast.loading("Gerando voucher fiel ao original...");
 
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
-    
-    // Header
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(14);
-    doc.text("FLN TRANSFER EXECUTIVO & TURISMO", 14, 20);
-    
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "normal");
-    doc.text("50.890.100/0001-09", 14, 26);
-    doc.text("Florianópolis / Santa Catarina", 14, 32);
+    try {
+      // 1. Carregar o arquivo original
+      const templateUrl = "/voucher-template.pdf";
+      const existingPdfBytes = await fetch(templateUrl).then(res => res.arrayBuffer());
 
-    doc.text("Tel.: (48) 98822-2934", pageWidth - 14, 20, { align: "right" });
-    doc.text("contato@flntransferexecutivo.com.br", pageWidth - 14, 26, { align: "right" });
-    doc.text("Contato: +55 48 99967-2557", pageWidth - 14, 32, { align: "right" });
+      // 2. Criar documento a partir do original
+      const pdfDoc = await PDFDocument.load(existingPdfBytes);
+      const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+      const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+      const pages = pdfDoc.getPages();
+      const firstPage = pages[0];
 
-    // Client Info
-    doc.setFontSize(12);
-    doc.text("Dados do Cliente", 14, 45);
-    doc.line(14, 47, pageWidth - 14, 47);
+      // Definição de coordenadas baseadas na análise visual do seu modelo
+      const drawText = (text: string, x: number, y: number, size = 9, font = helveticaFont) => {
+        firstPage.drawText(text, { x, y, size, font, color: rgb(0, 0, 0) });
+      };
 
-    doc.setFontSize(10);
-    doc.text(ride.client?.name ?? "—", 14, 54);
-    const clientPhone = (ride.client as { phone?: string })?.phone || "—";
-    doc.text(`Tel.: ${clientPhone}`, 14, 60);
-    doc.text(`Data: ${formatDate(new Date().toISOString())}`, pageWidth - 14, 60, { align: "right" });
+      // Limpar campos originais (desenhando retângulos brancos por cima se necessário)
+      // No seu caso, vamos apenas escrever por cima, pois os campos estarão vazios ou queremos substituir.
+      
+      // Nome Cliente e Tel
+      drawText(ride.client?.name ?? "—", 45, 725, 10, helveticaBold);
+      const clientPhone = (ride.client as { phone?: string })?.phone || "—";
+      drawText(`Tel.: ${clientPhone}`, 45, 710, 9);
+      
+      // Data emissão (Canto superior direito)
+      drawText(formatDate(new Date().toISOString()), 500, 710, 9);
 
-    // OS Header
-    doc.setFillColor(200, 200, 200);
-    doc.rect(14, 66, pageWidth - 28, 8, "F");
-    doc.setFont("helvetica", "bold");
-    doc.text(`ORDEM DE SERVIÇO Nº ${ride.id}`, pageWidth / 2, 71, { align: "center" });
+      // Nº Ordem de Serviço (Centro)
+      drawText(`ORDEM DE SERVIÇO Nº ${ride.id}`, 240, 685, 11, helveticaBold);
 
-    // Services Table
-    doc.setFontSize(12);
-    doc.setFont("helvetica", "normal");
-    doc.text("Serviços", 14, 84);
-    doc.line(14, 86, pageWidth - 14, 86);
+      // Tabela de Serviços
+      const serviceName = `${ride.origin} / ${ride.destination}`;
+      drawText(serviceName.substring(0, 60), 45, 645, 9);
+      drawText("1", 310, 645, 9);
+      drawText("un", 370, 645, 9);
+      drawText(formatCurrency(ride.price, ride.currency), 430, 645, 9);
+      drawText(formatCurrency(ride.price, ride.currency), 520, 645, 9);
 
-    doc.setFontSize(9);
-    doc.setFillColor(240, 240, 240);
-    doc.rect(14, 88, pageWidth - 28, 6, "F");
-    doc.text("Nome", 16, 92);
-    doc.text("Quantidade", 110, 92);
-    doc.text("Unidade", 135, 92);
-    doc.text("Valor Unitário", 160, 92);
-    doc.text("Valor Total", 190, 92, { align: "right" });
+      // Totais
+      drawText(formatCurrency(ride.price, ride.currency), 520, 615, 9); // Total Serviços
+      drawText(formatCurrency(ride.price, ride.currency), 520, 595, 9); // Subtotal
+      drawText(formatCurrency(ride.price, ride.currency), 520, 578, 10, helveticaBold); // Total
 
-    doc.text(`${ride.origin} / ${ride.destination}`, 16, 100);
-    doc.text("1", 118, 100);
-    doc.text("un", 140, 100);
-    doc.text(formatCurrency(ride.price, ride.currency), 160, 100);
-    doc.text(formatCurrency(ride.price, ride.currency), 190, 100, { align: "right" });
+      // Pagamento
+      drawText(serviceName.substring(0, 45), 260, 525, 8);
+      drawText(`- ${formatDateTime(ride.scheduled_at)}`, 260, 515, 8);
+      drawText(formatDate(ride.scheduled_at), 430, 525, 9);
+      drawText(formatCurrency(ride.price, ride.currency), 520, 525, 9);
 
-    doc.line(140, 105, pageWidth - 14, 105);
-    doc.text("Total Serviços", 140, 111);
-    doc.text(formatCurrency(ride.price, ride.currency), 190, 111, { align: "right" });
+      // Observações (Bloco Inferior)
+      let obsY = 445;
+      const drawObs = (txt: string) => { drawText(txt, 45, obsY, 8.5); obsY -= 12; };
+      
+      drawObs(`Transfer ${statusLabels[ride.status]}`);
+      drawObs(`Passageiro(a): ${ride.client?.name ?? "—"}`);
+      drawObs(`Data/Hora: ${formatDateTime(ride.scheduled_at)}`);
+      drawObs(`Motorista: ${ride.driver?.full_name ?? "A definir"}`);
+      drawObs(`Valor: ${formatCurrency(ride.price, ride.currency)}`);
+      drawObs(`Embarque: ${ride.origin}`);
+      drawObs(`Desembarque: ${ride.destination}`);
+      drawObs(`Pax: ${ride.pax_count}`);
+      if (ride.notes) drawObs(`Notas: ${ride.notes.substring(0, 80)}`);
 
-    doc.text("Subtotal", 140, 120);
-    doc.text(formatCurrency(ride.price, ride.currency), 190, 120, { align: "right" });
-    doc.setFont("helvetica", "bold");
-    doc.text("Total", 140, 126);
-    doc.text(formatCurrency(ride.price, ride.currency), 190, 126, { align: "right" });
+      // Assinatura Cliente (Canto inferior direito)
+      drawText(ride.client?.name ?? "—", 430, 310, 9, helveticaBold);
 
-    // Payments
-    doc.setFontSize(12);
-    doc.setFont("helvetica", "normal");
-    doc.text("Pagamento(s)", 90, 140);
-    doc.line(90, 142, pageWidth - 14, 142);
+      // 3. Salvar e baixar
+      const pdfBytes = await pdfDoc.save();
+      const blob = new Blob([pdfBytes], { type: "application/pdf" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = `OrdemServico-${ride.id}.pdf`;
+      link.click();
 
-    doc.setFontSize(9);
-    doc.setFillColor(240, 240, 240);
-    doc.rect(90, 144, pageWidth - 104, 6, "F");
-    doc.text("Pagamento", 92, 148);
-    doc.text("Vencimento", 160, 148);
-    doc.text("Valor", 190, 148, { align: "right" });
-
-    doc.text(`${ride.origin} / ${ride.destination}`, 92, 156);
-    doc.text(`- ${formatDateTime(ride.scheduled_at)}`, 92, 161);
-    doc.text(formatDate(ride.scheduled_at), 160, 156);
-    doc.text(formatCurrency(ride.price, ride.currency), 190, 156, { align: "right" });
-
-    // Observations
-    doc.setFontSize(12);
-    doc.text("Observações", 14, 175);
-    doc.line(14, 177, pageWidth - 14, 177);
-
-    doc.setFontSize(9);
-    doc.text(`Transfer ${statusLabels[ride.status]}`, 14, 185);
-    doc.text(`Passageiro(a): ${ride.client?.name ?? "—"}`, 14, 190);
-    doc.text(`Data/Hora: ${formatDateTime(ride.scheduled_at)}`, 14, 195);
-    doc.text(`Motorista: ${ride.driver?.full_name ?? "A definir"}`, 14, 200);
-    doc.text(`Valor: ${formatCurrency(ride.price, ride.currency)}`, 14, 205);
-    doc.text(`Embarque: ${ride.origin}`, 14, 210);
-    doc.text(`Desembarque: ${ride.destination}`, 14, 215);
-    doc.text(`Passageiros: ${ride.pax_count} Pax`, 14, 220);
-    if (ride.notes) {
-      const splitNotes = doc.splitTextToSize(`Notas: ${ride.notes}`, pageWidth - 28);
-      doc.text(splitNotes, 14, 225);
+      toast.success("Voucher 100% fiel gerado!", { id: toastId });
+    } catch (error) {
+      console.error(error);
+      toast.error("Erro ao processar modelo PDF", { id: toastId });
     }
-
-    // Signatures
-    doc.line(20, 260, 90, 260);
-    doc.setFont("helvetica", "bold");
-    doc.text("FLN TRANSFER EXECUTIVO & TURISMO", 55, 265, { align: "center" });
-    doc.setFont("helvetica", "normal");
-    doc.text("+55 48 99967-2557", 55, 270, { align: "center" });
-
-    doc.line(120, 260, 190, 260);
-    doc.text(ride.client?.name ?? "—", 155, 265, { align: "center" });
-
-    // Policy (Page 2 if needed, or small at bottom)
-    doc.addPage();
-    doc.setFontSize(8);
-    doc.setFont("helvetica", "bold");
-    doc.text("POLÍTICA DE CANCELAMENTO, MODIFICAÇÃO E NÃO COMPARECIMENTO", 14, 20);
-    doc.setFont("helvetica", "normal");
-    const policyText = `Valorizamos a organização e a qualidade do serviço. Por isso, estabelecemos a seguinte política:
-
-Cancelamentos e alterações de dados ou horários:
-- Solicitados com 24 horas de antecedência: sem custo.
-- Solicitados com até 12 horas de antecedência: será cobrado 50% do valor do serviço.
-- Solicitados com até 6 horas de antecedência: será cobrado 100% do valor do serviço.
-
-Não comparecimento (no-show):
-Se o cliente não comparecer ao local e hora combinados sem aviso prévio, será considerado no-show e cobrado 100% do valor do serviço.
-
-Atraso ou cancelamento de voo:
-Em casos de atraso ou cancelamento do voo, não será cobrada taxa de no-show. Acompanhamos e ajustamos os horários sempre que possível.
-
-Agradecemos a compreensão e ficamos à disposição.`;
-
-    const splitPolicy = doc.splitTextToSize(policyText, pageWidth - 28);
-    doc.text(splitPolicy, 14, 28);
-
-    doc.save(`OrdemServico-${ride.id}.pdf`);
-    toast.success("Voucher gerado com sucesso!");
   };
 
   if (!open) return null;
@@ -278,12 +211,8 @@ Agradecemos a compreensão e ficamos à disposição.`;
               </span>
             </div>
             {view === "admin" && (
-              <button 
-                onClick={() => router.push(`/admin/rides/${ride.id}/edit`)}
-                className="text-admin-muted hover:text-admin-text transition flex items-center gap-1.5 text-xs"
-              >
-                <Pencil className="h-3.5 w-3.5" />
-                Editar
+              <button onClick={() => router.push(`/admin/rides/${ride.id}/edit`)} className="text-admin-muted hover:text-admin-text transition flex items-center gap-1.5 text-xs">
+                <Pencil className="h-3.5 w-3.5" /> Editar
               </button>
             )}
           </div>
@@ -305,9 +234,7 @@ Agradecemos a compreensão e ficamos à disposição.`;
                   key={opt}
                   onClick={() => handleDriverStatusChange(opt)}
                   className={`py-2.5 px-4 rounded-xl text-xs font-bold transition-all border ${
-                    ride.driver_status === opt
-                      ? "bg-admin-silver text-admin-black border-admin-silver"
-                      : "bg-transparent text-admin-text-dim border-white/10 hover:border-white/20"
+                    ride.driver_status === opt ? "bg-admin-silver text-admin-black border-admin-silver" : "bg-transparent text-admin-text-dim border-white/10 hover:border-white/20"
                   }`}
                 >
                   {opt}
@@ -316,7 +243,6 @@ Agradecemos a compreensão e ficamos à disposição.`;
             </div>
           </div>
 
-          {/* Logs / Registro de Alterações - Optimized for width */}
           <div className="pt-6 border-t border-white/5 w-full">
             <div className="flex items-center gap-2 mb-4">
               <History className="h-4 w-4 text-admin-muted" />
@@ -330,8 +256,7 @@ Agradecemos a compreensão e ficamos à disposição.`;
                   <div key={log.id} className="text-[10px] space-y-1 bg-white/[0.03] p-3 rounded-xl border border-white/5 w-[95%] mx-auto">
                     <div className="flex justify-between items-center gap-4">
                       <span className="text-admin-silver font-bold flex items-center gap-1.5 truncate">
-                        <User className="h-3 w-3 opacity-50" /> 
-                        {log.user_name}
+                        <User className="h-3 w-3 opacity-50" /> {log.user_name}
                       </span>
                       <span className="text-admin-muted shrink-0">{formatDateTime(log.created_at)}</span>
                     </div>
@@ -342,17 +267,14 @@ Agradecemos a compreensão e ficamos à disposição.`;
             </div>
           </div>
 
-          {/* Botão VOUCHER */}
           <div className="pt-6 mt-6 border-t border-white/5 w-full">
             <button
               onClick={generateVoucher}
               className="w-full bg-admin-card border border-admin-border text-admin-silver hover:bg-white/5 hover:text-white rounded-xl py-4 font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-all shadow-lg"
             >
-              <FileDown className="h-5 w-5" />
-              Gerar Voucher
+              <FileDown className="h-5 w-5" /> Gerar Voucher (Modelo OS)
             </button>
           </div>
-
         </div>
       ) : (
         <div className="py-8 text-center text-admin-muted">Não foi possível carregar os dados.</div>
