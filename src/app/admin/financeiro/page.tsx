@@ -91,7 +91,7 @@ export default function FinanceiroPage() {
 
   const recentRides = rides.slice(0, 20);
 
-  async function handleStatusChange(rideId: string, newStatus: FinancialStatus) {
+  async function handleStatusChange(rideId: string | number, newStatus: FinancialStatus) {
     const { error } = await supabase
       .from("rides")
       .update({ financial_status: newStatus })

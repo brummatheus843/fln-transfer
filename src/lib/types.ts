@@ -52,7 +52,7 @@ export type FinancialStatus =
   | "paid_to_partner";
 
 export interface Ride {
-  id: string;
+  id: string | number;
   client_id: string;
   client?: Client;
   driver_id?: string;
