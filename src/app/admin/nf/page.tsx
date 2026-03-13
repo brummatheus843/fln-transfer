@@ -28,7 +28,7 @@ export default function NFPage() {
         return;
       }
       setRides(data ?? []);
-    } catch (err: any) {
+    } catch (err) {
       console.error("NF unexpected error:", err);
       toast.error("Erro inesperado ao carregar notas fiscais");
     } finally {

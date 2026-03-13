@@ -72,7 +72,7 @@ export default function FinanceiroPage() {
         return;
       }
       setAllRides(data ?? []);
-    } catch (err: any) {
+    } catch (err) {
       console.error("Financeiro unexpected error:", err);
       toast.error("Erro inesperado ao carregar dados financeiros");
     } finally {

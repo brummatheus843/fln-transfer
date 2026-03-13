@@ -239,7 +239,7 @@ export default function RidesPage() {
         return;
       }
       setAllRides(data ?? []);
-    } catch (err: any) {
+    } catch (err) {
       console.error("Fetch error:", err);
       toast.error("Erro inesperado ao carregar corridas");
     } finally {
