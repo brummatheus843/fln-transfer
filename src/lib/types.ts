@@ -35,6 +35,7 @@ export interface Driver {
   profile_id?: string;
   full_name: string;
   phone?: string;
+  cpf?: string;
   license_plate?: string;
   vehicle_model?: string;
   pix_key?: string;
