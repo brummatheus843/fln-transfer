@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import Link from "next/link";
 import { toast } from "sonner";
 import {
   formatDate,
@@ -25,16 +24,6 @@ const statusBadgeClasses: Record<RideStatus, string> = {
   completed: "bg-admin-green/10 text-admin-green border-admin-green/20",
   cancelled: "bg-admin-red/10 text-admin-red border-admin-red/20",
 };
-
-const allFinancialStatuses: FinancialStatus[] = [
-  "pending",
-  "awaiting_approval",
-  "awaiting_payment",
-  "invoiced",
-  "in_progress",
-  "completed",
-  "paid_to_partner",
-];
 
 const statusTabs = [
   { key: "todas", label: "Todas", status: null },
