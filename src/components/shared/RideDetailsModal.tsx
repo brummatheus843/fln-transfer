@@ -6,12 +6,11 @@ import {
   formatDateTime,
   formatCurrency,
   statusLabels,
-  statusColors,
   type RideStatus,
 } from "@/lib/formatters";
-import { MapPin, Phone, Users, FileText, X, Pencil, Trash2 } from "lucide-react";
+import { Phone, Pencil } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import type { Ride, Client } from "@/lib/types";
+import type { Ride } from "@/lib/types";
 import { Modal } from "./Modal";
 import { useRouter } from "next/navigation";
 
@@ -71,7 +70,7 @@ export function RideDetailsModal({ rideId, open, onClose, onUpdate, view }: Ride
     }
   }, [open, rideId, fetchRide]);
 
-  const handleUpdateStatus = async (newStatus: RideStatus, extra: any = {}) => {
+  const handleUpdateStatus = async (newStatus: RideStatus, extra: Record<string, string | null> = {}) => {
     if (!rideId) return;
     const { error } = await supabase
       .from("rides")
@@ -128,14 +127,14 @@ export function RideDetailsModal({ rideId, open, onClose, onUpdate, view }: Ride
             )}
           </div>
 
-          {(ride.client as any)?.phone && (
+          {(ride.client as { phone?: string })?.phone && (
             <div className="bg-white/5 rounded-xl p-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <Phone className="h-4 w-4 text-admin-muted" />
-                <span className="text-sm text-admin-text-dim">{(ride.client as any).phone}</span>
+                <span className="text-sm text-admin-text-dim">{(ride.client as { phone?: string }).phone}</span>
               </div>
               <a 
-                href={`tel:${(ride.client as any).phone.replace(/\D/g, "")}`}
+                href={`tel:${(ride.client as { phone?: string }).phone?.replace(/\D/g, "")}`}
                 className="text-xs font-bold text-admin-silver uppercase tracking-wider hover:underline"
               >
                 Ligar
@@ -146,7 +145,7 @@ export function RideDetailsModal({ rideId, open, onClose, onUpdate, view }: Ride
           {ride.notes && (
             <div className="space-y-1">
               <p className="text-admin-muted text-[10px] uppercase tracking-widest">Observações</p>
-              <p className="text-admin-text text-sm italic">"{ride.notes}"</p>
+              <p className="text-admin-text text-sm italic">&ldquo;{ride.notes}&rdquo;</p>
             </div>
           )}
 
