@@ -7,10 +7,11 @@ import {
   formatCurrency,
   statusLabels,
   type RideStatus,
+  driverStatusOptions,
 } from "@/lib/formatters";
-import { Phone, Pencil } from "lucide-react";
+import { Phone, Pencil, History, User } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import type { Ride } from "@/lib/types";
+import type { Ride, RideLog } from "@/lib/types";
 import { Modal } from "./Modal";
 import { useRouter } from "next/navigation";
 
@@ -42,22 +43,31 @@ export function RideDetailsModal({ rideId, open, onClose, onUpdate, view }: Ride
   const supabase = createClient();
   const router = useRouter();
   const [ride, setRide] = useState<Ride | null>(null);
+  const [logs, setLogs] = useState<RideLog[]>([]);
   const [loading, setLoading] = useState(false);
 
   const fetchRide = useCallback(async () => {
     if (!rideId) return;
     setLoading(true);
-    const { data, error } = await supabase
-      .from("rides")
-      .select("*, client:clients(name, phone), driver:drivers(full_name), agency:agencies(name)")
-      .eq("id", rideId)
-      .single();
+    const [rideRes, logRes] = await Promise.all([
+      supabase
+        .from("rides")
+        .select("*, client:clients(name, phone), driver:drivers(full_name), agency:agencies(name)")
+        .eq("id", rideId)
+        .single(),
+      supabase
+        .from("ride_logs")
+        .select("*")
+        .eq("ride_id", rideId)
+        .order("created_at", { ascending: false })
+    ]);
     
-    if (error) {
+    if (rideRes.error) {
       toast.error("Erro ao carregar detalhes");
       onClose();
     } else {
-      setRide(data);
+      setRide(rideRes.data);
+      setLogs(logRes.data ?? []);
     }
     setLoading(false);
   }, [rideId, supabase, onClose]);
@@ -67,8 +77,23 @@ export function RideDetailsModal({ rideId, open, onClose, onUpdate, view }: Ride
       fetchRide();
     } else {
       setRide(null);
+      setLogs([]);
     }
   }, [open, rideId, fetchRide]);
+
+  const logChange = async (action: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    
+    const { data: profile } = await supabase.from("profiles").select("full_name").eq("id", user.id).single();
+    
+    await supabase.from("ride_logs").insert({
+      ride_id: rideId,
+      user_id: user.id,
+      user_name: profile?.full_name || user.email,
+      action
+    });
+  };
 
   const handleUpdateStatus = async (newStatus: RideStatus, extra: Record<string, string | null> = {}) => {
     if (!rideId) return;
@@ -82,6 +107,25 @@ export function RideDetailsModal({ rideId, open, onClose, onUpdate, view }: Ride
       return;
     }
     
+    await logChange(`Alterou situação para: ${statusLabels[newStatus]}`);
+    toast.success("Status atualizado!");
+    fetchRide();
+    if (onUpdate) onUpdate();
+  };
+
+  const handleDriverStatusChange = async (newDriverStatus: string) => {
+    if (!rideId) return;
+    const { error } = await supabase
+      .from("rides")
+      .update({ driver_status: newDriverStatus })
+      .eq("id", rideId);
+    
+    if (error) {
+      toast.error("Erro ao atualizar status");
+      return;
+    }
+    
+    await logChange(`Alterou status para: ${newDriverStatus}`);
     toast.success("Status atualizado!");
     fetchRide();
     if (onUpdate) onUpdate();
@@ -98,9 +142,14 @@ export function RideDetailsModal({ rideId, open, onClose, onUpdate, view }: Ride
       ) : ride ? (
         <div className="space-y-6">
           <div className="flex items-center justify-between gap-3">
-            <span className={`text-[10px] px-2.5 py-1 rounded-full border uppercase tracking-widest font-medium ${statusBadgeClasses[ride.status]}`}>
-              {statusLabels[ride.status]}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className={`text-[10px] px-2.5 py-1 rounded-full border uppercase tracking-widest font-medium ${statusBadgeClasses[ride.status]}`}>
+                {statusLabels[ride.status]}
+              </span>
+              <span className="text-[10px] px-2.5 py-1 rounded-full border border-admin-silver/30 bg-admin-silver/10 text-admin-silver uppercase tracking-widest font-medium">
+                {ride.driver_status || "Pendente"}
+              </span>
+            </div>
             {view === "admin" && (
               <button 
                 onClick={() => router.push(`/admin/rides/${ride.id}/edit`)}
@@ -119,66 +168,50 @@ export function RideDetailsModal({ rideId, open, onClose, onUpdate, view }: Ride
             <DetailRow label="Passageiros" value={`${ride.pax_count} pax`} />
             <DetailRow label="Origem" value={ride.origin} />
             <DetailRow label="Destino" value={ride.destination} />
-            {view === "admin" && (
-              <>
-                <DetailRow label="Agência" value={ride.agency?.name} />
-                <DetailRow label="Valor" value={formatCurrency(ride.price, ride.currency)} />
-              </>
-            )}
           </div>
 
-          {(ride.client as { phone?: string })?.phone && (
-            <div className="bg-white/5 rounded-xl p-4 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Phone className="h-4 w-4 text-admin-muted" />
-                <span className="text-sm text-admin-text-dim">{(ride.client as { phone?: string }).phone}</span>
-              </div>
-              <a 
-                href={`tel:${(ride.client as { phone?: string }).phone?.replace(/\D/g, "")}`}
-                className="text-xs font-bold text-admin-silver uppercase tracking-wider hover:underline"
-              >
-                Ligar
-              </a>
-            </div>
-          )}
-
-          {ride.notes && (
-            <div className="space-y-1">
-              <p className="text-admin-muted text-[10px] uppercase tracking-widest">Observações</p>
-              <p className="text-admin-text text-sm italic">&ldquo;{ride.notes}&rdquo;</p>
-            </div>
-          )}
-
           <div className="space-y-3 pt-2">
-            {view === "driver" && (
-              <>
-                {ride.status === "scheduled" && (
-                  <button
-                    onClick={() => handleUpdateStatus("in_progress", { started_at: new Date().toISOString() })}
-                    className="btn-admin w-full py-3.5 font-bold shadow-lg"
-                  >
-                    Iniciar Corrida
-                  </button>
-                )}
-                {ride.status === "in_progress" && (
-                  <button
-                    onClick={() => handleUpdateStatus("completed", { finished_at: new Date().toISOString() })}
-                    className="bg-admin-green/20 border border-admin-green/30 text-admin-green hover:bg-admin-green/30 w-full py-3.5 rounded-xl font-bold transition-all shadow-lg shadow-admin-green/5"
-                  >
-                    Finalizar Corrida
-                  </button>
-                )}
-              </>
-            )}
-            
-            {view === "admin" && ride.status !== "cancelled" && ride.status !== "completed" && (
-              <button
-                onClick={() => handleUpdateStatus("cancelled")}
-                className="w-full py-3 border border-admin-red/20 text-admin-red hover:bg-admin-red/10 rounded-xl text-xs font-bold uppercase tracking-widest transition-all"
-              >
-                Cancelar Corrida
-              </button>
-            )}
+            <label className="text-[10px] text-admin-muted uppercase tracking-widest block font-bold">Status da Operação</label>
+            <div className="grid grid-cols-1 gap-2">
+              {driverStatusOptions.map((opt) => (
+                <button
+                  key={opt}
+                  onClick={() => handleDriverStatusChange(opt)}
+                  className={`py-2.5 px-4 rounded-xl text-xs font-bold transition-all border ${
+                    ride.driver_status === opt
+                      ? "bg-admin-silver text-admin-black border-admin-silver"
+                      : "bg-transparent text-admin-text-dim border-white/10 hover:border-white/20"
+                  }`}
+                >
+                  {opt}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Logs / Registro de Alterações */}
+          <div className="pt-6 border-t border-white/5">
+            <div className="flex items-center gap-2 mb-4">
+              <History className="h-4 w-4 text-admin-muted" />
+              <h4 className="text-xs font-bold text-admin-text uppercase tracking-widest">Registro de Alterações</h4>
+            </div>
+            <div className="space-y-3 max-h-40 overflow-y-auto pr-2 scrollbar-hide">
+              {logs.length === 0 ? (
+                <p className="text-[10px] text-admin-muted italic">Nenhuma alteração registrada.</p>
+              ) : (
+                logs.map((log) => (
+                  <div key={log.id} className="text-[10px] space-y-0.5 bg-white/[0.02] p-2 rounded-lg border border-white/5">
+                    <div className="flex justify-between items-center">
+                      <span className="text-admin-silver font-bold flex items-center gap-1">
+                        <User className="h-2.5 w-2.5" /> {log.user_name}
+                      </span>
+                      <span className="text-admin-muted">{formatDateTime(log.created_at)}</span>
+                    </div>
+                    <p className="text-admin-text-dim">{log.action}</p>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         </div>
       ) : (

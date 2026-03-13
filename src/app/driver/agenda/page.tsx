@@ -21,11 +21,16 @@ function RideCard({ ride, onClick }: { ride: Ride; onClick: () => void }) {
           <span className="text-lg font-semibold text-admin-silver">
             {formatTime(ride.scheduled_at)}
           </span>
-          <span
-            className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${statusColors[ride.status]}`}
-          >
-            {statusLabels[ride.status]}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] px-2 py-0.5 rounded-full border border-admin-silver/30 bg-admin-silver/5 text-admin-silver uppercase font-bold">
+              {ride.driver_status || "Pendente"}
+            </span>
+            <span
+              className={`rounded-full px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-widest border ${statusColors[ride.status]}`}
+            >
+              {statusLabels[ride.status]}
+            </span>
+          </div>
         </div>
         <p className="font-medium text-admin-text">{ride.client?.name ?? "—"}</p>
         <div className="flex items-start gap-2 text-sm text-admin-text-dim">
@@ -55,11 +60,13 @@ export default function DriverAgendaPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
+    // 1. Encontrar o motorista vinculado a este profile_id
     const { data: driver } = await supabase
       .from("drivers")
       .select("id")
       .eq("profile_id", user.id)
       .single();
+    
     if (!driver) {
       setLoading(false);
       return;
@@ -72,7 +79,7 @@ export default function DriverAgendaPage() {
     const { data, error } = await supabase
       .from("rides")
       .select("*, client:clients(name)")
-      .eq("driver_id", driver.id)
+      .eq("driver_id", driver.id) // Filtrar apenas as corridas deste motorista
       .gte("scheduled_at", today.toISOString().slice(0, 10) + "T00:00:00")
       .lte("scheduled_at", nextWeek.toISOString().slice(0, 10) + "T23:59:59")
       .order("scheduled_at");
@@ -100,7 +107,7 @@ export default function DriverAgendaPage() {
         <h2 className="mb-3 text-xl font-bold text-admin-text">Hoje</h2>
         {todayRides.length === 0 ? (
           <p className="text-sm text-admin-muted">
-            Nenhuma corrida agendada para hoje.
+            Nenhuma corrida atribuída para hoje.
           </p>
         ) : (
           <div className="space-y-3">

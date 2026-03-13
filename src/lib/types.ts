@@ -68,9 +68,19 @@ export interface Ride {
   currency: "BRL" | "USD" | "EUR";
   status: "scheduled" | "in_progress" | "completed" | "cancelled";
   financial_status?: FinancialStatus;
+  driver_status?: string;
   notes?: string;
   started_at?: string;
   finished_at?: string;
   nf_number?: string;
+  created_at: string;
+}
+
+export interface RideLog {
+  id: number;
+  ride_id: string | number;
+  user_id: string;
+  user_name: string;
+  action: string;
   created_at: string;
 }

@@ -94,3 +94,10 @@ export const financialStatusColors: Record<FinancialStatus, string> = {
   completed: "bg-admin-green/10 text-admin-green border border-admin-green/20",
   paid_to_partner: "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20",
 };
+
+export const driverStatusOptions = [
+  "Pendente",
+  "Em deslocamento para embarque",
+  "Em andamento",
+  "Concluído",
+];
