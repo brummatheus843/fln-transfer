@@ -145,9 +145,10 @@ export function RideDetailsModal({ rideId, open, onClose, onUpdate, view }: Ride
       write(formatDate(new Date().toISOString()), 500, 708, 9);
 
       // 3. Nº Ordem de Serviço (No centro da barra cinza)
-      // Como o fundo é cinza, vamos desenhar um retângulo cinza para limpar o número antigo
       firstPage.drawRectangle({ x: 330, y: 683, width: 100, height: 12, color: rgb(0.6, 0.6, 0.6) });
-      write(`ORDEM DE SERVIÇO Nº ${ride.id}`, pageWidthCenter(330, 100, `ORDEM DE SERVIÇO Nº ${ride.id}`, 11, helveticaBold), 685, 11, helveticaBold, rgb(1, 1, 1));
+      const osText = `ORDEM DE SERVIÇO Nº ${ride.id}`;
+      const osWidth = helveticaBold.widthOfTextAtSize(osText, 11);
+      write(osText, 330 + (100 - osWidth) / 2, 685, 11, helveticaBold, rgb(1, 1, 1));
 
       // 4. Tabela de Serviços (Linha 1)
       mask(40, 640, 520, 15); // Limpa a linha inteira da tabela
@@ -190,12 +191,6 @@ export function RideDetailsModal({ rideId, open, onClose, onUpdate, view }: Ride
       // 8. Assinatura do Cliente
       mask(400, 305, 180, 15); // Limpa o nome antigo sob a linha
       write(ride.client?.name ?? "—", 430, 308, 9, helveticaBold);
-
-      // Helper para centralizar na barra
-      function pageWidthCenter(startX: number, width: number, text: string, size: number, font: import('pdf-lib').PDFFont) {
-        const textWidth = font.widthOfTextAtSize(text, size);
-        return startX + (width - textWidth) / 2;
-      }
 
       const pdfBytes = await pdfDoc.save();
       // @ts-expect-error - Compatibilidade Blob
