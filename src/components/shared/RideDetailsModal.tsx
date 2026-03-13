@@ -285,7 +285,7 @@ export function RideDetailsModal({ rideId, open, onClose, onUpdate, view }: Ride
               onClick={generateVoucher}
               className="w-full bg-admin-card border border-admin-border text-admin-silver hover:bg-white/5 hover:text-white rounded-xl py-4 font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-all shadow-lg"
             >
-              <FileDown className="h-5 w-5" /> Gerar Voucher (Modelo OS)
+              <FileDown className="h-5 w-5" /> Gerar Voucher
             </button>
           </div>
         </div>
