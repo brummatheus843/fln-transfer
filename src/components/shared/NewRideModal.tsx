@@ -19,7 +19,6 @@ export function NewRideModal({ open, onClose, onCreated }: NewRideModalProps) {
   const supabase = createClient();
   const [agencies, setAgencies] = useState<Pick<Agency, "id" | "name">[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
-  const [driverSearch, setDriverSearch] = useState("");
   const [showDriverSuggestions, setShowDriverSuggestions] = useState(false);
   const [form, setForm] = useState({
     client_name: "", 

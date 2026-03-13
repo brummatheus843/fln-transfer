@@ -3,14 +3,11 @@
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import {
-  UserCog,
   Plus,
   Pencil,
   Trash2,
   Phone,
   Car,
-  CheckCircle2,
-  XCircle,
   FileText,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
