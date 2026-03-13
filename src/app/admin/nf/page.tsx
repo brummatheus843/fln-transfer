@@ -151,7 +151,7 @@ export default function NFPage() {
                 <tbody>
                   {rides.map((ride) => (
                     <tr key={ride.id}>
-                      <td className="text-admin-text font-medium">{ride.id.slice(0, 8)}</td>
+                      <td className="text-admin-text font-medium">{ride.id}</td>
                       <td className="text-admin-text-dim">{formatDate(ride.scheduled_at)}</td>
                       <td className="text-admin-text-dim">{ride.client?.name ?? "—"}</td>
                       <td className="text-admin-text-dim">{ride.origin}</td>

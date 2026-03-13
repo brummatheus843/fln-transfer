@@ -73,7 +73,7 @@ export default function RideDetailPage() {
     <div className="animate-fade-in">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
         <h2 className="text-lg md:text-2xl font-bold text-admin-text">
-          Corrida #{ride.id.slice(0, 8)}
+          Corrida #{ride.id}
         </h2>
         <div className="flex gap-2">
           <button
