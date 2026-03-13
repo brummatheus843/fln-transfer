@@ -21,7 +21,7 @@ export default function RootLayout({
     <html lang="pt-BR">
       <body className={cn("min-h-screen bg-background antialiased", inter.className)}>
         {children}
-        <Toaster />
+        <Toaster duration={2000} closeButton />
       </body>
     </html>
   );

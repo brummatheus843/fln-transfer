@@ -6,12 +6,15 @@ import { toast } from "sonner";
 import {
   formatDate,
   formatCurrency,
+  formatDateTime,
   statusLabels,
+  financialStatusLabels,
   type RideStatus,
+  type FinancialStatus,
 } from "@/lib/formatters";
 import { createClient } from "@/lib/supabase/client";
 import type { Ride } from "@/lib/types";
-import { ChevronRight, MapPin, Plus } from "lucide-react";
+import { ChevronRight, MapPin, Plus, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { PeriodFilter, getDateRange, type PeriodKey } from "@/components/shared/PeriodFilter";
 import { NewRideModal } from "@/components/shared/NewRideModal";
 
@@ -22,6 +25,16 @@ const statusBadgeClasses: Record<RideStatus, string> = {
   cancelled: "bg-admin-red/10 text-admin-red border-admin-red/20",
 };
 
+const allFinancialStatuses: FinancialStatus[] = [
+  "pending",
+  "awaiting_approval",
+  "awaiting_payment",
+  "invoiced",
+  "in_progress",
+  "completed",
+  "paid_to_partner",
+];
+
 const statusTabs = [
   { key: "todas", label: "Todas", status: null },
   { key: "agendadas", label: "Agendadas", status: "scheduled" as RideStatus },
@@ -30,36 +43,68 @@ const statusTabs = [
   { key: "canceladas", label: "Canceladas", status: "cancelled" as RideStatus },
 ];
 
-function RideCard({ ride }: { ride: Ride }) {
+type SortField = "client" | "origin" | "destination" | "date" | "created_at" | "price";
+type SortOrder = "asc" | "desc";
+
+function RideCard({ ride, onStatusChange }: { ride: Ride; onStatusChange: (id: string | number, status: FinancialStatus) => void }) {
   return (
-    <Link href={`/admin/rides/${ride.id}`}>
-      <div className="stat-card !p-4">
-        <div className="flex items-start justify-between gap-2 mb-2">
-          <span className="font-semibold text-admin-text text-sm truncate">{ride.client?.name ?? "—"}</span>
-          <span className={`text-[10px] px-2 py-0.5 rounded-full border uppercase tracking-widest font-medium whitespace-nowrap ${statusBadgeClasses[ride.status]}`}>
-            {statusLabels[ride.status]}
-          </span>
-        </div>
-        <div className="flex items-center gap-1.5 text-xs text-admin-text-dim mb-1">
-          <MapPin className="h-3 w-3 shrink-0 text-admin-muted" />
-          <span className="truncate">{ride.origin} → {ride.destination}</span>
-        </div>
-        <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/5">
-          <span className="text-xs text-admin-muted">{formatDate(ride.scheduled_at)}</span>
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-bold text-admin-silver">{formatCurrency(ride.price, ride.currency)}</span>
-            <ChevronRight className="h-4 w-4 text-admin-muted" />
-          </div>
-        </div>
-        {ride.driver?.full_name && (
-          <p className="text-[10px] text-admin-muted mt-2 px-2 py-1 bg-white/5 rounded-lg inline-block">Motorista: {ride.driver.full_name}</p>
-        )}
+    <div className="stat-card !p-4">
+      <div className="flex items-start justify-between gap-2 mb-2">
+        <Link href={`/admin/rides/${ride.id}`} className="font-semibold text-admin-text text-sm truncate hover:text-admin-silver transition">
+          {ride.client?.name ?? "—"}
+        </Link>
+        <span className={`text-[10px] px-2 py-0.5 rounded-full border uppercase tracking-widest font-medium whitespace-nowrap ${statusBadgeClasses[ride.status]}`}>
+          {statusLabels[ride.status]}
+        </span>
       </div>
-    </Link>
+      <div className="flex items-center gap-1.5 text-xs text-admin-text-dim mb-1">
+        <MapPin className="h-3 w-3 shrink-0 text-admin-muted" />
+        <span className="truncate">{ride.origin} → {ride.destination}</span>
+      </div>
+      <div className="text-[10px] text-admin-muted mb-2">
+        Registrada em: {formatDateTime(ride.created_at)}
+      </div>
+      <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/5">
+        <span className="text-xs text-admin-muted">{formatDate(ride.scheduled_at)}</span>
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-bold text-admin-silver">{formatCurrency(ride.price, ride.currency)}</span>
+          <Link href={`/admin/rides/${ride.id}`}>
+            <ChevronRight className="h-4 w-4 text-admin-muted" />
+          </Link>
+        </div>
+      </div>
+      <div className="mt-3 pt-3 border-t border-white/5 space-y-2">
+        <label className="text-[10px] text-admin-muted uppercase tracking-widest block">Status Financeiro</label>
+        <select
+          value={ride.financial_status ?? "pending"}
+          onChange={(e) => onStatusChange(ride.id, e.target.value as FinancialStatus)}
+          className="bg-admin-dark text-xs rounded-lg px-3 py-2 border border-admin-border text-admin-text focus:outline-none focus:border-admin-silver/50 w-full"
+        >
+          {allFinancialStatuses.map((s) => (
+            <option key={s} value={s}>{financialStatusLabels[s]}</option>
+          ))}
+        </select>
+      </div>
+    </div>
   );
 }
 
-function RidesTable({ items }: { items: Ride[] }) {
+function RidesTable({ 
+  items, 
+  onStatusChange, 
+  sortConfig, 
+  onSort 
+}: { 
+  items: Ride[]; 
+  onStatusChange: (id: string | number, status: FinancialStatus) => void;
+  sortConfig: { field: SortField; order: SortOrder };
+  onSort: (field: SortField) => void;
+}) {
+  const SortIcon = ({ field }: { field: SortField }) => {
+    if (sortConfig.field !== field) return <ArrowUpDown className="h-3 w-3 ml-1 opacity-30" />;
+    return sortConfig.order === "asc" ? <ArrowUp className="h-3 w-3 ml-1 text-admin-silver" /> : <ArrowDown className="h-3 w-3 ml-1 text-admin-silver" />;
+  };
+
   return (
     <>
       {/* Mobile: cards */}
@@ -67,7 +112,7 @@ function RidesTable({ items }: { items: Ride[] }) {
         {items.length === 0 ? (
           <p className="text-center text-admin-muted py-8">Nenhuma corrida encontrada.</p>
         ) : (
-          items.map((ride) => <RideCard key={ride.id} ride={ride} />)
+          items.map((ride) => <RideCard key={ride.id} ride={ride} onStatusChange={onStatusChange} />)
         )}
       </div>
 
@@ -77,28 +122,52 @@ function RidesTable({ items }: { items: Ride[] }) {
           <table className="admin-table">
             <thead>
               <tr>
-                <th>Cliente</th>
-                <th>Origem</th>
-                <th>Destino</th>
-                <th>Data</th>
-                <th>Motorista</th>
-                <th>Valor</th>
+                <th className="cursor-pointer hover:text-admin-text transition" onClick={() => onSort("client")}>
+                  <div className="flex items-center">Cliente <SortIcon field="client" /></div>
+                </th>
+                <th className="cursor-pointer hover:text-admin-text transition" onClick={() => onSort("origin")}>
+                  <div className="flex items-center">Origem <SortIcon field="origin" /></div>
+                </th>
+                <th className="cursor-pointer hover:text-admin-text transition" onClick={() => onSort("destination")}>
+                  <div className="flex items-center">Destino <SortIcon field="destination" /></div>
+                </th>
+                <th className="cursor-pointer hover:text-admin-text transition" onClick={() => onSort("date")}>
+                  <div className="flex items-center">Data Corrida <SortIcon field="date" /></div>
+                </th>
+                <th className="cursor-pointer hover:text-admin-text transition" onClick={() => onSort("created_at")}>
+                  <div className="flex items-center">Data Registrada <SortIcon field="created_at" /></div>
+                </th>
+                <th className="cursor-pointer hover:text-admin-text transition text-right" onClick={() => onSort("price")}>
+                  <div className="flex items-center justify-end">Valor <SortIcon field="price" /></div>
+                </th>
+                <th>Status Financeiro</th>
                 <th>Status</th>
               </tr>
             </thead>
             <tbody>
               {items.map((ride) => (
-                <tr key={ride.id} onClick={() => window.location.href = `/admin/rides/${ride.id}`} className="cursor-pointer">
+                <tr key={ride.id}>
                   <td>
-                    <span className="text-admin-text font-medium hover:text-admin-silver transition">
+                    <Link href={`/admin/rides/${ride.id}`} className="text-admin-text font-medium hover:text-admin-silver transition">
                       {ride.client?.name ?? "—"}
-                    </span>
+                    </Link>
                   </td>
                   <td className="text-admin-text-dim">{ride.origin}</td>
                   <td className="text-admin-text-dim">{ride.destination}</td>
                   <td className="text-admin-text-dim">{formatDate(ride.scheduled_at)}</td>
-                  <td className="text-admin-text-dim">{ride.driver?.full_name ?? "—"}</td>
-                  <td className="text-admin-silver font-bold">{formatCurrency(ride.price, ride.currency)}</td>
+                  <td className="text-admin-text-dim">{formatDateTime(ride.created_at)}</td>
+                  <td className="text-admin-silver font-bold text-right">{formatCurrency(ride.price, ride.currency)}</td>
+                  <td>
+                    <select
+                      value={ride.financial_status ?? "pending"}
+                      onChange={(e) => onStatusChange(ride.id, e.target.value as FinancialStatus)}
+                      className="bg-transparent text-xs rounded-lg px-2 py-1 border border-white/10 text-admin-text focus:outline-none focus:border-white/30"
+                    >
+                      {allFinancialStatuses.map((s) => (
+                        <option key={s} value={s}>{financialStatusLabels[s]}</option>
+                      ))}
+                    </select>
+                  </td>
                   <td>
                     <span className={`text-[10px] px-2.5 py-1 rounded-full border uppercase tracking-widest font-medium ${statusBadgeClasses[ride.status]}`}>
                       {statusLabels[ride.status]}
@@ -108,7 +177,7 @@ function RidesTable({ items }: { items: Ride[] }) {
               ))}
               {items.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="text-center text-admin-muted py-8">
+                  <td colSpan={8} className="text-center text-admin-muted py-8">
                     Nenhuma corrida encontrada.
                   </td>
                 </tr>
@@ -130,6 +199,11 @@ export default function RidesPage() {
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
   const [showNewRide, setShowNewRide] = useState(false);
+  
+  const [sortConfig, setSortConfig] = useState<{ field: SortField; order: SortOrder }>({
+    field: "date",
+    order: "desc",
+  });
 
   const fetchRides = useCallback(async () => {
     const { data, error } = await supabase
@@ -148,6 +222,30 @@ export default function RidesPage() {
     fetchRides();
   }, [fetchRides]);
 
+  const handleStatusChange = async (rideId: string | number, newStatus: FinancialStatus) => {
+    const { error } = await supabase
+      .from("rides")
+      .update({ financial_status: newStatus })
+      .eq("id", rideId);
+    
+    if (error) {
+      toast.error("Erro ao atualizar status financeiro");
+      return;
+    }
+    
+    toast.success("Status financeiro atualizado!");
+    setAllRides((prev) => 
+      prev.map((r) => r.id === rideId ? { ...r, financial_status: newStatus } : r)
+    );
+  };
+
+  const handleSort = (field: SortField) => {
+    setSortConfig((prev) => ({
+      field,
+      order: prev.field === field && prev.order === "asc" ? "desc" : "asc",
+    }));
+  };
+
   const range = getDateRange(period, customFrom, customTo);
   const periodFiltered = allRides.filter((r) => {
     const d = r.scheduled_at.slice(0, 10);
@@ -156,6 +254,28 @@ export default function RidesPage() {
 
   const activeStatus = statusTabs.find((t) => t.key === activeTab)?.status ?? null;
   const filtered = activeStatus ? periodFiltered.filter((r) => r.status === activeStatus) : periodFiltered;
+
+  // Manual sorting logic
+  const sorted = [...filtered].sort((a, b) => {
+    const order = sortConfig.order === "asc" ? 1 : -1;
+    
+    switch (sortConfig.field) {
+      case "client":
+        return order * (a.client?.name ?? "").localeCompare(b.client?.name ?? "");
+      case "origin":
+        return order * (a.origin ?? "").localeCompare(b.origin ?? "");
+      case "destination":
+        return order * (a.destination ?? "").localeCompare(b.destination ?? "");
+      case "date":
+        return order * (new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime());
+      case "created_at":
+        return order * (new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+      case "price":
+        return order * (Number(a.price) - Number(b.price));
+      default:
+        return 0;
+    }
+  });
 
   return (
     <div className="animate-fade-in">
@@ -197,7 +317,12 @@ export default function RidesPage() {
       {loading ? (
         <p className="text-admin-muted text-center py-8">Carregando...</p>
       ) : (
-        <RidesTable items={filtered} />
+        <RidesTable 
+          items={sorted} 
+          onStatusChange={handleStatusChange} 
+          sortConfig={sortConfig}
+          onSort={handleSort}
+        />
       )}
 
       <NewRideModal

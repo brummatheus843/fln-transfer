@@ -13,7 +13,7 @@ import {
   DollarSign,
   Percent,
 } from "lucide-react";
-import { formatCurrency, formatDate } from "@/lib/formatters";
+import { formatCurrency, formatDate, formatDateTime } from "@/lib/formatters";
 import type { FinancialStatus } from "@/lib/formatters";
 import { financialStatusLabels } from "@/lib/formatters";
 import { createClient } from "@/lib/supabase/client";
@@ -89,7 +89,8 @@ export default function FinanceiroPage() {
   }, 0);
   const netRevenue = totalRevenue - totalCommissions;
 
-  const recentRides = rides.slice(0, 20);
+  // Filter only pending rides for the main table
+  const pendingRides = rides.filter(r => (r.financial_status ?? "pending") === "pending");
 
   async function handleStatusChange(rideId: string | number, newStatus: FinancialStatus) {
     const { error } = await supabase
@@ -166,21 +167,24 @@ export default function FinanceiroPage() {
 
       {/* Mobile: card list */}
       <div className="md:hidden space-y-3">
-        <h3 className="text-sm font-semibold text-admin-text mb-2">Corridas ({rides.length})</h3>
-        {recentRides.length === 0 ? (
-          <p className="text-admin-muted text-center py-6 text-sm">Nenhuma corrida no período.</p>
+        <h3 className="text-sm font-semibold text-admin-text mb-2">Pendentes ({pendingRides.length})</h3>
+        {pendingRides.length === 0 ? (
+          <p className="text-admin-muted text-center py-6 text-sm">Nenhuma pendência no período.</p>
         ) : (
-          recentRides.map((ride) => (
+          pendingRides.map((ride) => (
             <div key={ride.id} className="bg-admin-card border border-admin-border rounded-xl p-4 space-y-2">
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <p className="text-sm font-medium text-admin-text">{ride.client?.name ?? "—"}</p>
-                  <p className="text-xs text-admin-muted">{formatDate(ride.scheduled_at)}</p>
+                  <p className="text-[10px] text-admin-muted uppercase tracking-wider">{formatDate(ride.scheduled_at)}</p>
                 </div>
                 <p className="text-sm font-bold text-admin-silver whitespace-nowrap">{formatCurrency(Number(ride.price))}</p>
               </div>
+              <div className="text-[10px] text-admin-muted mb-1">
+                Registrada em: {formatDateTime(ride.created_at)}
+              </div>
               <div>
-                <label className="text-[10px] text-admin-muted uppercase tracking-widest block mb-1">Status Financeiro</label>
+                <label className="text-[10px] text-admin-muted uppercase tracking-widest block mb-1">Alterar Status</label>
                 <select
                   value={ride.financial_status ?? "pending"}
                   onChange={(e) => handleStatusChange(ride.id, e.target.value as FinancialStatus)}
@@ -199,7 +203,7 @@ export default function FinanceiroPage() {
       {/* Desktop: table */}
       <div className="hidden md:block admin-table-container">
         <div className="px-5 py-4 border-b border-white/5 bg-white/[0.02]">
-          <h3 className="text-sm font-semibold text-admin-text">Corridas ({rides.length})</h3>
+          <h3 className="text-sm font-semibold text-admin-text">Pendentes ({pendingRides.length})</h3>
         </div>
         <div className="overflow-x-auto">
           <table className="admin-table">
@@ -207,22 +211,24 @@ export default function FinanceiroPage() {
               <tr>
                 <th>ID</th>
                 <th>Cliente</th>
-                <th>Data</th>
+                <th>Data Corrida</th>
+                <th>Data registrada</th>
                 <th className="text-right">Valor</th>
                 <th>Status Financeiro</th>
               </tr>
             </thead>
             <tbody>
-              {recentRides.length === 0 ? (
+              {pendingRides.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="text-center text-admin-muted py-8">Nenhuma corrida no período.</td>
+                  <td colSpan={6} className="text-center text-admin-muted py-8">Nenhuma pendência no período.</td>
                 </tr>
               ) : (
-                recentRides.map((ride) => (
+                pendingRides.map((ride) => (
                   <tr key={ride.id}>
                     <td className="text-admin-text font-medium">{ride.id}</td>
                     <td className="text-admin-text-dim">{ride.client?.name ?? "—"}</td>
                     <td className="text-admin-text-dim">{formatDate(ride.scheduled_at)}</td>
+                    <td className="text-admin-text-dim">{formatDateTime(ride.created_at)}</td>
                     <td className="text-right text-admin-silver font-bold">{formatCurrency(Number(ride.price))}</td>
                     <td>
                       <select

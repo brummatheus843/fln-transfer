@@ -62,6 +62,7 @@ export function NewRideModal({ open, onClose, onCreated }: NewRideModalProps) {
       price: Number(form.price) || 0,
       notes: form.notes || null,
       status: "scheduled",
+      financial_status: "pending",
     });
     if (error) { toast.error("Erro ao criar corrida: " + error.message); return; }
     toast.success("Corrida criada!");
