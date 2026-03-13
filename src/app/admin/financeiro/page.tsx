@@ -22,6 +22,7 @@ import { financialStatusLabels } from "@/lib/formatters";
 import { createClient } from "@/lib/supabase/client";
 import type { Ride, Agency } from "@/lib/types";
 import { PeriodFilter, getDateRange, type PeriodKey } from "@/components/shared/PeriodFilter";
+import { RideDetailsModal } from "@/components/shared/RideDetailsModal";
 
 const statusIcons: Record<FinancialStatus, React.ElementType> = {
   pending: Clock,
@@ -53,6 +54,7 @@ export default function FinanceiroPage() {
   const [period, setPeriod] = useState<PeriodKey>("30dias");
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
+  const [selectedRideId, setSelectedRideId] = useState<string | number | null>(null);
   
   const [sortConfig, setSortConfig] = useState<{ field: SortField; order: SortOrder }>({
     field: "created_at",
@@ -120,9 +122,7 @@ export default function FinanceiroPage() {
       return;
     }
     toast.success("Status financeiro atualizado!");
-    setAllRides((prev) =>
-      prev.map((r) => (r.id === rideId ? { ...r, financial_status: newStatus } : r))
-    );
+    fetchRides(); // Atualiza para remover da lista de pendentes
   }
 
   const handleSort = (field: SortField) => {
@@ -224,10 +224,10 @@ export default function FinanceiroPage() {
           sortedPending.map((ride) => (
             <div key={ride.id} className="stat-card !p-5 space-y-4">
               <div className="flex items-start justify-between gap-3 pb-3 border-b border-white/5">
-                <div>
-                  <p className="font-bold text-admin-text text-base leading-tight mb-1">{ride.client?.name ?? "—"}</p>
+                <button onClick={() => setSelectedRideId(ride.id)} className="text-left">
+                  <p className="font-bold text-admin-text text-base leading-tight mb-1 hover:text-admin-silver transition">{ride.client?.name ?? "—"}</p>
                   <p className="text-[10px] text-admin-muted uppercase tracking-wider">{formatDate(ride.scheduled_at)}</p>
-                </div>
+                </button>
                 <div className="text-right">
                   <p className="text-lg font-black text-admin-silver">{formatCurrency(Number(ride.price))}</p>
                 </div>
@@ -236,7 +236,7 @@ export default function FinanceiroPage() {
               <div className="grid grid-cols-2 gap-4 text-[10px] text-admin-muted uppercase tracking-widest">
                 <div>
                   <p className="mb-1 text-white/40">ID</p>
-                  <p className="text-admin-text-dim font-medium">{ride.id}</p>
+                  <button onClick={() => setSelectedRideId(ride.id)} className="text-admin-silver font-bold hover:underline">#{ride.id}</button>
                 </div>
                 <div className="text-right">
                   <p className="mb-1 text-white/40">Data Registro</p>
@@ -297,7 +297,9 @@ export default function FinanceiroPage() {
               ) : (
                 sortedPending.map((ride) => (
                   <tr key={ride.id} className="hover:bg-white/[0.02] transition-colors">
-                    <td className="px-6 py-5 text-admin-text font-medium">{ride.id}</td>
+                    <td className="px-6 py-5">
+                      <button onClick={() => setSelectedRideId(ride.id)} className="text-admin-silver font-bold hover:underline">#{ride.id}</button>
+                    </td>
                     <td className="px-6 py-5 text-admin-text-dim">{ride.client?.name ?? "—"}</td>
                     <td className="px-6 py-5 text-admin-text-dim">{formatDate(ride.scheduled_at)}</td>
                     <td className="px-6 py-5 text-admin-text-dim">{formatDateTime(ride.created_at)}</td>
@@ -320,6 +322,14 @@ export default function FinanceiroPage() {
           </table>
         </div>
       </div>
+
+      <RideDetailsModal
+        rideId={selectedRideId}
+        open={!!selectedRideId}
+        onClose={() => setSelectedRideId(null)}
+        onUpdate={() => fetchRides()}
+        view="admin"
+      />
     </div>
   );
 }

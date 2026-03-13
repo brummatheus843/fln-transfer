@@ -84,6 +84,7 @@ export function RideDetailsModal({ rideId, open, onClose, onUpdate, view }: Ride
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
     
+    // Tenta pegar o nome do perfil, se não existir usa o email ( fallback )
     const { data: profile } = await supabase.from("profiles").select("full_name").eq("id", user.id).single();
     
     await supabase.from("ride_logs").insert({
@@ -170,25 +171,26 @@ export function RideDetailsModal({ rideId, open, onClose, onUpdate, view }: Ride
             </div>
           </div>
 
-          {/* Logs / Registro de Alterações */}
-          <div className="pt-6 border-t border-white/5">
+          {/* Logs / Registro de Alterações - Optimized for width */}
+          <div className="pt-6 border-t border-white/5 w-full">
             <div className="flex items-center gap-2 mb-4">
               <History className="h-4 w-4 text-admin-muted" />
               <h4 className="text-xs font-bold text-admin-text uppercase tracking-widest">Registro de Alterações</h4>
             </div>
-            <div className="space-y-3 max-h-40 overflow-y-auto pr-2 scrollbar-hide">
+            <div className="space-y-2 max-h-60 overflow-y-auto pr-1 scrollbar-hide">
               {logs.length === 0 ? (
-                <p className="text-[10px] text-admin-muted italic">Nenhuma alteração registrada.</p>
+                <p className="text-[10px] text-admin-muted italic px-2">Nenhuma alteração registrada.</p>
               ) : (
                 logs.map((log) => (
-                  <div key={log.id} className="text-[10px] space-y-0.5 bg-white/[0.02] p-2 rounded-lg border border-white/5">
-                    <div className="flex justify-between items-center">
-                      <span className="text-admin-silver font-bold flex items-center gap-1">
-                        <User className="h-2.5 w-2.5" /> {log.user_name}
+                  <div key={log.id} className="text-[10px] space-y-1 bg-white/[0.03] p-3 rounded-xl border border-white/5 w-[95%] mx-auto">
+                    <div className="flex justify-between items-center gap-4">
+                      <span className="text-admin-silver font-bold flex items-center gap-1.5 truncate">
+                        <User className="h-3 w-3 opacity-50" /> 
+                        {log.user_name}
                       </span>
-                      <span className="text-admin-muted">{formatDateTime(log.created_at)}</span>
+                      <span className="text-admin-muted shrink-0">{formatDateTime(log.created_at)}</span>
                     </div>
-                    <p className="text-admin-text-dim">{log.action}</p>
+                    <p className="text-admin-text-dim text-[11px] leading-relaxed">{log.action}</p>
                   </div>
                 ))
               )}

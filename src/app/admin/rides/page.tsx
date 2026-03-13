@@ -24,6 +24,9 @@ const statusBadgeClasses: Record<RideStatus, string> = {
   cancelled: "bg-admin-red/10 text-admin-red border-admin-red/20",
 };
 
+type SortField = "id" | "client" | "driver" | "origin" | "destination" | "date" | "created_at" | "price" | "status" | "financial_status";
+type SortOrder = "asc" | "desc";
+
 const statusTabs = [
   { key: "todas", label: "Todas", status: null },
   { key: "agendadas", label: "Agendadas", status: "scheduled" as RideStatus },
@@ -32,15 +35,15 @@ const statusTabs = [
   { key: "canceladas", label: "Canceladas", status: "cancelled" as RideStatus },
 ];
 
-type SortField = "client" | "driver" | "origin" | "destination" | "date" | "created_at" | "price" | "status" | "financial_status";
-type SortOrder = "asc" | "desc";
-
 function RideCard({ ride, onSelect }: { ride: Ride; onSelect: (id: string | number) => void }) {
   return (
     <button onClick={() => onSelect(ride.id)} className="block w-full text-left">
       <div className="stat-card !p-4">
         <div className="flex items-start justify-between gap-2 mb-2">
-          <span className="font-semibold text-admin-text text-sm truncate">{ride.client?.name ?? "—"}</span>
+          <div>
+            <p className="text-[10px] text-admin-silver font-bold uppercase tracking-widest mb-0.5">#{ride.id}</p>
+            <span className="font-semibold text-admin-text text-sm truncate">{ride.client?.name ?? "—"}</span>
+          </div>
           <span className={`text-[10px] px-2 py-0.5 rounded-full border uppercase tracking-widest font-medium whitespace-nowrap ${statusBadgeClasses[ride.status]}`}>
             {statusLabels[ride.status]}
           </span>
@@ -105,6 +108,9 @@ function RidesTable({
           <table className="admin-table">
             <thead>
               <tr>
+                <th className="cursor-pointer hover:text-admin-text transition px-4" onClick={() => onSort("id")}>
+                  <div className="flex items-center">ID <SortIcon field="id" /></div>
+                </th>
                 <th className="cursor-pointer hover:text-admin-text transition px-4" onClick={() => onSort("client")}>
                   <div className="flex items-center">Cliente <SortIcon field="client" /></div>
                 </th>
@@ -136,9 +142,12 @@ function RidesTable({
             </thead>
             <tbody>
               {items.map((ride) => (
-                <tr key={ride.id} onClick={() => onSelect(ride.id)} className="cursor-pointer">
+                <tr key={ride.id}>
                   <td className="px-4">
-                    <span className="text-admin-text font-medium hover:text-admin-silver transition">
+                    <button onClick={() => onSelect(ride.id)} className="text-admin-silver font-bold hover:underline">#{ride.id}</button>
+                  </td>
+                  <td className="px-4" onClick={() => onSelect(ride.id)}>
+                    <span className="text-admin-text font-medium hover:text-admin-silver transition cursor-pointer">
                       {ride.client?.name ?? "—"}
                     </span>
                   </td>
@@ -164,7 +173,7 @@ function RidesTable({
               ))}
               {items.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="text-center text-admin-muted py-8">
+                  <td colSpan={10} className="text-center text-admin-muted py-8">
                     Nenhuma corrida encontrada.
                   </td>
                 </tr>
@@ -238,6 +247,8 @@ export default function RidesPage() {
     const order = sortConfig.order === "asc" ? 1 : -1;
     
     switch (sortConfig.field) {
+      case "id":
+        return order * String(a.id).localeCompare(String(b.id));
       case "client":
         return order * (a.client?.name ?? "").localeCompare(b.client?.name ?? "");
       case "driver":
