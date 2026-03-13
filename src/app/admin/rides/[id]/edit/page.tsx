@@ -4,7 +4,8 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
-import type { Client, Driver, Agency } from "@/lib/types";
+import type { Client, Driver, Agency, FinancialStatus } from "@/lib/types";
+import { financialStatusLabels, driverStatusOptions } from "@/lib/formatters";
 
 const inputClass =
   "w-full bg-admin-card border border-admin-border rounded-lg px-3 py-2 text-sm text-admin-text focus:outline-none focus:border-admin-silver/50";
@@ -30,6 +31,8 @@ export default function EditRidePage() {
     currency: "BRL",
     notes: "",
     status: "scheduled",
+    financial_status: "pending" as FinancialStatus,
+    driver_status: "Pendente",
   });
 
   const fetchData = useCallback(async () => {
@@ -54,6 +57,8 @@ export default function EditRidePage() {
         currency: r.currency || "BRL",
         notes: r.notes || "",
         status: r.status || "scheduled",
+        financial_status: (r.financial_status as FinancialStatus) || "pending",
+        driver_status: r.driver_status || "Pendente",
       });
     }
     
@@ -67,12 +72,28 @@ export default function EditRidePage() {
     fetchData();
   }, [fetchData]);
 
+  const logChange = async (action: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { data: profile } = await supabase.from("profiles").select("full_name").eq("id", user.id).single();
+    await supabase.from("ride_logs").insert({
+      ride_id: id,
+      user_id: user.id,
+      user_name: profile?.full_name || user.email,
+      action
+    });
+  };
+
   function handleChange(field: string, value: string | number) {
     setForm((prev) => ({ ...prev, [field]: value }));
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    
+    // Check what changed to log it
+    await logChange("Editou dados da corrida manualmente via painel administrativo");
+
     const { error } = await supabase
       .from("rides")
       .update({
@@ -87,6 +108,8 @@ export default function EditRidePage() {
         currency: form.currency,
         notes: form.notes || null,
         status: form.status,
+        financial_status: form.financial_status,
+        driver_status: form.driver_status,
       })
       .eq("id", id);
 
@@ -96,16 +119,16 @@ export default function EditRidePage() {
     }
 
     toast.success("Corrida atualizada com sucesso!");
-    router.push(`/admin/rides/${id}`);
+    router.push(`/admin/rides`);
   }
 
   if (loading) return <p className="text-admin-muted text-center py-8">Carregando...</p>;
 
   return (
-    <div className="animate-fade-in max-w-2xl mx-auto">
-      <h2 className="text-xl md:text-2xl font-bold text-admin-text mb-6">Editar Corrida</h2>
+    <div className="animate-fade-in max-w-2xl mx-auto pb-10">
+      <h2 className="text-xl md:text-2xl font-bold text-admin-text mb-6 px-1">Editar Corrida #{id}</h2>
       
-      <form onSubmit={handleSubmit} className="bg-admin-card border border-admin-border rounded-xl p-6 space-y-4">
+      <form onSubmit={handleSubmit} className="stat-card !p-6 space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="text-[10px] text-admin-muted uppercase tracking-widest mb-1.5 block">Cliente</label>
@@ -123,16 +146,9 @@ export default function EditRidePage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-white/5">
           <div>
-            <label className="text-[10px] text-admin-muted uppercase tracking-widest mb-1.5 block">Agência</label>
-            <select className={inputClass} value={form.agency_id} onChange={(e) => handleChange("agency_id", e.target.value)}>
-              <option value="">Sem agência</option>
-              {agencies.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="text-[10px] text-admin-muted uppercase tracking-widest mb-1.5 block">Status</label>
+            <label className="text-[10px] text-admin-muted uppercase tracking-widest mb-1.5 block">Situação (Geral)</label>
             <select className={inputClass} value={form.status} onChange={(e) => handleChange("status", e.target.value)}>
               <option value="scheduled">Agendada</option>
               <option value="in_progress">Em andamento</option>
@@ -140,9 +156,24 @@ export default function EditRidePage() {
               <option value="cancelled">Cancelada</option>
             </select>
           </div>
+          <div>
+            <label className="text-[10px] text-admin-muted uppercase tracking-widest mb-1.5 block">Status da Operação</label>
+            <select className={inputClass} value={form.driver_status} onChange={(e) => handleChange("driver_status", e.target.value)}>
+              {driverStatusOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+            </select>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="pt-2 border-t border-white/5">
+          <label className="text-[10px] text-admin-muted uppercase tracking-widest mb-1.5 block">Status Financeiro</label>
+          <select className={inputClass} value={form.financial_status} onChange={(e) => handleChange("financial_status", e.target.value)}>
+            {Object.entries(financialStatusLabels).map(([val, label]) => (
+              <option key={val} value={val}>{label}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-white/5">
           <div>
             <label className="text-[10px] text-admin-muted uppercase tracking-widest mb-1.5 block">Origem</label>
             <input className={inputClass} value={form.origin} onChange={(e) => handleChange("origin", e.target.value)} required />
@@ -164,7 +195,14 @@ export default function EditRidePage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 border-t border-white/5">
+          <div>
+            <label className="text-[10px] text-admin-muted uppercase tracking-widest mb-1.5 block">Agência</label>
+            <select className={inputClass} value={form.agency_id} onChange={(e) => handleChange("agency_id", e.target.value)}>
+              <option value="">Sem agência</option>
+              {agencies.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+            </select>
+          </div>
           <div>
             <label className="text-[10px] text-admin-muted uppercase tracking-widest mb-1.5 block">Valor</label>
             <input className={inputClass} type="number" step="0.01" value={form.price} onChange={(e) => handleChange("price", e.target.value)} required />
@@ -184,11 +222,11 @@ export default function EditRidePage() {
           <textarea className={`${inputClass} min-h-[100px]`} value={form.notes} onChange={(e) => handleChange("notes", e.target.value)} />
         </div>
 
-        <div className="flex gap-3 pt-4">
-          <button type="button" onClick={() => router.back()} className="flex-1 bg-admin-card border border-admin-border text-admin-text-dim hover:text-admin-text hover:bg-admin-card-hover rounded-lg px-4 py-2.5 text-sm transition">
+        <div className="flex gap-3 pt-6 border-t border-white/5">
+          <button type="button" onClick={() => router.back()} className="flex-1 bg-admin-card border border-admin-border text-admin-text-dim hover:text-admin-text hover:bg-admin-card-hover rounded-xl px-4 py-3.5 text-sm transition font-bold uppercase tracking-widest">
             Cancelar
           </button>
-          <button type="submit" className="flex-1 btn-admin py-2.5">
+          <button type="submit" className="flex-1 btn-admin py-3.5 font-bold uppercase tracking-widest shadow-lg">
             Salvar Alterações
           </button>
         </div>

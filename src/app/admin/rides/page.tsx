@@ -17,6 +17,7 @@ import type { Ride } from "@/lib/types";
 import { ChevronRight, MapPin, Plus, ArrowUpDown, ArrowUp, ArrowDown, User } from "lucide-react";
 import { PeriodFilter, getDateRange, type PeriodKey } from "@/components/shared/PeriodFilter";
 import { NewRideModal } from "@/components/shared/NewRideModal";
+import { RideDetailsModal } from "@/components/shared/RideDetailsModal";
 
 const statusBadgeClasses: Record<RideStatus, string> = {
   scheduled: "bg-admin-blue/10 text-admin-blue border-admin-blue/20",
@@ -46,68 +47,53 @@ const statusTabs = [
 type SortField = "client" | "driver" | "origin" | "destination" | "date" | "created_at" | "price" | "status" | "financial_status";
 type SortOrder = "asc" | "desc";
 
-function RideCard({ ride, onStatusChange }: { ride: Ride; onStatusChange: (id: string | number, status: FinancialStatus) => void }) {
+function RideCard({ ride, onSelect }: { ride: Ride; onSelect: (id: string | number) => void }) {
   return (
-    <div className="stat-card !p-4">
-      <div className="flex items-start justify-between gap-2 mb-2">
-        <Link href={`/admin/rides/${ride.id}`} className="font-semibold text-admin-text text-sm truncate hover:text-admin-silver transition">
-          {ride.client?.name ?? "—"}
-        </Link>
-        <span className={`text-[10px] px-2 py-0.5 rounded-full border uppercase tracking-widest font-medium whitespace-nowrap ${statusBadgeClasses[ride.status]}`}>
-          {statusLabels[ride.status]}
-        </span>
-      </div>
-      
-      <div className="flex items-center gap-1.5 text-xs text-admin-text-dim mb-1">
-        <User className="h-3 w-3 shrink-0 text-admin-muted" />
-        <span className={ride.driver?.full_name ? "" : "text-admin-red/70 font-medium"}>
-          {ride.driver?.full_name ?? "Sem motorista"}
-        </span>
-      </div>
+    <button onClick={() => onSelect(ride.id)} className="block w-full text-left">
+      <div className="stat-card !p-4">
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <span className="font-semibold text-admin-text text-sm truncate">{ride.client?.name ?? "—"}</span>
+          <span className={`text-[10px] px-2 py-0.5 rounded-full border uppercase tracking-widest font-medium whitespace-nowrap ${statusBadgeClasses[ride.status]}`}>
+            {statusLabels[ride.status]}
+          </span>
+        </div>
+        
+        <div className="flex items-center gap-1.5 text-xs text-admin-text-dim mb-1">
+          <User className="h-3 w-3 shrink-0 text-admin-muted" />
+          <span className={ride.driver?.full_name ? "" : "text-admin-red/70 font-medium"}>
+            {ride.driver?.full_name ?? "Sem motorista"}
+          </span>
+        </div>
 
-      <div className="flex items-center gap-1.5 text-xs text-admin-text-dim mb-1">
-        <MapPin className="h-3 w-3 shrink-0 text-admin-muted" />
-        <span className="truncate">{ride.origin} → {ride.destination}</span>
-      </div>
-      
-      <div className="text-[10px] text-admin-muted mb-2">
-        Registrada em: {formatDateTime(ride.created_at)}
-      </div>
-      
-      <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/5">
-        <span className="text-xs text-admin-muted">{formatDate(ride.scheduled_at)}</span>
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-bold text-admin-silver">{formatCurrency(ride.price, ride.currency)}</span>
-          <Link href={`/admin/rides/${ride.id}`}>
+        <div className="flex items-center gap-1.5 text-xs text-admin-text-dim mb-1">
+          <MapPin className="h-3 w-3 shrink-0 text-admin-muted" />
+          <span className="truncate">{ride.origin} → {ride.destination}</span>
+        </div>
+        
+        <div className="text-[10px] text-admin-muted mb-2">
+          Registrada em: {formatDateTime(ride.created_at)}
+        </div>
+        
+        <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/5">
+          <span className="text-xs text-admin-muted">{formatDate(ride.scheduled_at)}</span>
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-bold text-admin-silver">{formatCurrency(ride.price, ride.currency)}</span>
             <ChevronRight className="h-4 w-4 text-admin-muted" />
-          </Link>
+          </div>
         </div>
       </div>
-      
-      <div className="mt-3 pt-3 border-t border-white/5 space-y-2">
-        <label className="text-[10px] text-admin-muted uppercase tracking-widest block">Status Financeiro</label>
-        <select
-          value={ride.financial_status ?? "pending"}
-          onChange={(e) => onStatusChange(ride.id, e.target.value as FinancialStatus)}
-          className="bg-admin-dark text-xs rounded-lg px-3 py-2 border border-admin-border text-admin-text focus:outline-none focus:border-admin-silver/50 w-full"
-        >
-          {allFinancialStatuses.map((s) => (
-            <option key={s} value={s}>{financialStatusLabels[s]}</option>
-          ))}
-        </select>
-      </div>
-    </div>
+    </button>
   );
 }
 
 function RidesTable({ 
   items, 
-  onStatusChange, 
+  onSelect,
   sortConfig, 
   onSort 
 }: { 
   items: Ride[]; 
-  onStatusChange: (id: string | number, status: FinancialStatus) => void;
+  onSelect: (id: string | number) => void;
   sortConfig: { field: SortField; order: SortOrder };
   onSort: (field: SortField) => void;
 }) {
@@ -122,7 +108,7 @@ function RidesTable({
         {items.length === 0 ? (
           <p className="text-center text-admin-muted py-8">Nenhuma corrida encontrada.</p>
         ) : (
-          items.map((ride) => <RideCard key={ride.id} ride={ride} onStatusChange={onStatusChange} />)
+          items.map((ride) => <RideCard key={ride.id} ride={ride} onSelect={onSelect} />)
         )}
       </div>
 
@@ -153,20 +139,20 @@ function RidesTable({
                   <div className="flex items-center justify-end">Valor <SortIcon field="price" /></div>
                 </th>
                 <th className="cursor-pointer hover:text-admin-text transition px-4" onClick={() => onSort("financial_status")}>
-                  <div className="flex items-center">Status Financeiro <SortIcon field="financial_status" /></div>
+                  <div className="flex items-center">Financ. <SortIcon field="financial_status" /></div>
                 </th>
                 <th className="cursor-pointer hover:text-admin-text transition px-4" onClick={() => onSort("status")}>
-                  <div className="flex items-center">Status <SortIcon field="status" /></div>
+                  <div className="flex items-center">Situação <SortIcon field="status" /></div>
                 </th>
               </tr>
             </thead>
             <tbody>
               {items.map((ride) => (
-                <tr key={ride.id}>
+                <tr key={ride.id} onClick={() => onSelect(ride.id)} className="cursor-pointer">
                   <td className="px-4">
-                    <Link href={`/admin/rides/${ride.id}`} className="text-admin-text font-medium hover:text-admin-silver transition">
+                    <span className="text-admin-text font-medium hover:text-admin-silver transition">
                       {ride.client?.name ?? "—"}
-                    </Link>
+                    </span>
                   </td>
                   <td className="px-4">
                     <span className={ride.driver?.full_name ? "text-admin-text-dim" : "text-admin-red/70 font-bold"}>
@@ -179,15 +165,7 @@ function RidesTable({
                   <td className="text-admin-text-dim px-4">{formatDateTime(ride.created_at)}</td>
                   <td className="text-admin-silver font-bold text-right px-4">{formatCurrency(ride.price, ride.currency)}</td>
                   <td className="px-4">
-                    <select
-                      value={ride.financial_status ?? "pending"}
-                      onChange={(e) => onStatusChange(ride.id, e.target.value as FinancialStatus)}
-                      className="bg-transparent text-xs rounded-lg px-2 py-1 border border-white/10 text-admin-text focus:outline-none focus:border-white/30"
-                    >
-                      {allFinancialStatuses.map((s) => (
-                        <option key={s} value={s}>{financialStatusLabels[s]}</option>
-                      ))}
-                    </select>
+                    <span className="text-[10px] text-admin-text-dim uppercase">{financialStatusLabels[ride.financial_status ?? "pending"]}</span>
                   </td>
                   <td className="px-4">
                     <span className={`text-[10px] px-2.5 py-1 rounded-full border uppercase tracking-widest font-medium ${statusBadgeClasses[ride.status]}`}>
@@ -220,6 +198,7 @@ export default function RidesPage() {
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
   const [showNewRide, setShowNewRide] = useState(false);
+  const [selectedRideId, setSelectedRideId] = useState<string | number | null>(null);
   
   const [sortConfig, setSortConfig] = useState<{ field: SortField; order: SortOrder }>({
     field: "date",
@@ -251,23 +230,6 @@ export default function RidesPage() {
     fetchRides();
   }, [fetchRides]);
 
-  const handleStatusChange = async (rideId: string | number, newStatus: FinancialStatus) => {
-    const { error } = await supabase
-      .from("rides")
-      .update({ financial_status: newStatus })
-      .eq("id", rideId);
-    
-    if (error) {
-      toast.error("Erro ao atualizar status financeiro");
-      return;
-    }
-    
-    toast.success("Status financeiro atualizado!");
-    setAllRides((prev) => 
-      prev.map((r) => r.id === rideId ? { ...r, financial_status: newStatus } : r)
-    );
-  };
-
   const handleSort = (field: SortField) => {
     setSortConfig((prev) => ({
       field,
@@ -276,18 +238,14 @@ export default function RidesPage() {
   };
 
   const range = getDateRange(period, customFrom, customTo);
-  
-  // STEP 1: Narrow down by period
   const periodFiltered = allRides.filter((r) => {
     const d = r.scheduled_at.slice(0, 10);
     return d >= range.from && d <= range.to;
   });
 
-  // STEP 2: Narrow down by active status tab (AGENDADAS, PENDENTES, etc)
   const activeStatus = statusTabs.find((t) => t.key === activeTab)?.status ?? null;
   const filtered = activeStatus ? periodFiltered.filter((r) => r.status === activeStatus) : periodFiltered;
 
-  // STEP 3: Sort the result
   const sorted = [...filtered].sort((a, b) => {
     const order = sortConfig.order === "asc" ? 1 : -1;
     
@@ -295,7 +253,6 @@ export default function RidesPage() {
       case "client":
         return order * (a.client?.name ?? "").localeCompare(b.client?.name ?? "");
       case "driver":
-        // Sort nulls first
         if (!a.driver?.full_name && b.driver?.full_name) return -1 * order;
         if (a.driver?.full_name && !b.driver?.full_name) return 1 * order;
         return order * (a.driver?.full_name ?? "").localeCompare(b.driver?.full_name ?? "");
@@ -359,7 +316,7 @@ export default function RidesPage() {
       ) : (
         <RidesTable 
           items={sorted} 
-          onStatusChange={handleStatusChange} 
+          onSelect={setSelectedRideId}
           sortConfig={sortConfig}
           onSort={handleSort}
         />
@@ -369,6 +326,14 @@ export default function RidesPage() {
         open={showNewRide}
         onClose={() => setShowNewRide(false)}
         onCreated={() => fetchRides()}
+      />
+
+      <RideDetailsModal
+        rideId={selectedRideId}
+        open={!!selectedRideId}
+        onClose={() => setSelectedRideId(null)}
+        onUpdate={() => fetchRides()}
+        view="admin"
       />
     </div>
   );
