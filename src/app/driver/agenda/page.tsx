@@ -22,7 +22,7 @@ function RideCard({ ride, onClick }: { ride: Ride; onClick: () => void }) {
             {formatTime(ride.scheduled_at)}
           </span>
           <div className="flex items-center gap-2">
-            <span className="text-[10px] px-2 py-0.5 rounded-full border border-admin-silver/30 bg-admin-silver/5 text-admin-silver uppercase font-bold">
+            <span className="text-[10px] px-2 py-0.5 rounded-full border border-admin-silver/30 bg-admin-silver/10 text-admin-silver uppercase font-bold">
               {ride.driver_status || "Pendente"}
             </span>
             <span
@@ -60,7 +60,6 @@ export default function DriverAgendaPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    // 1. Encontrar o motorista vinculado a este profile_id
     const { data: driver } = await supabase
       .from("drivers")
       .select("id")
@@ -72,17 +71,14 @@ export default function DriverAgendaPage() {
       return;
     }
 
-    const today = new Date();
-    const nextWeek = new Date();
-    nextWeek.setDate(today.getDate() + 7);
-
+    // Buscamos TODAS as corridas do motorista sem limites de data aqui
+    // para que apareçam tanto na agenda quanto na lista
     const { data, error } = await supabase
       .from("rides")
       .select("*, client:clients(name)")
-      .eq("driver_id", driver.id) // Filtrar apenas as corridas deste motorista
-      .gte("scheduled_at", today.toISOString().slice(0, 10) + "T00:00:00")
-      .lte("scheduled_at", nextWeek.toISOString().slice(0, 10) + "T23:59:59")
-      .order("scheduled_at");
+      .eq("driver_id", driver.id)
+      .order("scheduled_at", { ascending: true });
+
     if (error) {
       toast.error("Erro ao carregar agenda");
       return;
@@ -95,19 +91,25 @@ export default function DriverAgendaPage() {
     fetch();
   }, [fetch]);
 
-  const today = new Date().toISOString().slice(0, 10);
-  const todayRides = rides.filter((r) => r.scheduled_at.slice(0, 10) === today);
-  const upcomingRides = rides.filter((r) => r.scheduled_at.slice(0, 10) > today);
+  // Lógica de data baseada apenas no dia (YYYY-MM-DD)
+  const todayStr = new Date().toLocaleDateString("en-CA"); // Formato YYYY-MM-DD local
+  
+  const pastRides = rides.filter((r) => r.scheduled_at.slice(0, 10) < todayStr);
+  const todayRides = rides.filter((r) => r.scheduled_at.slice(0, 10) === todayStr);
+  const upcomingRides = rides.filter((r) => r.scheduled_at.slice(0, 10) > todayStr);
 
   if (loading) return <p className="text-admin-muted text-center py-8">Carregando...</p>;
 
   return (
-    <div className="space-y-6 pb-20 animate-fade-in">
+    <div className="space-y-8 pb-20 animate-fade-in">
       <section>
-        <h2 className="mb-3 text-xl font-bold text-admin-text">Hoje</h2>
+        <h2 className="mb-3 text-xl font-bold text-admin-text flex items-center justify-between">
+          Hoje
+          <span className="text-[10px] bg-admin-silver/10 text-admin-silver px-2 py-1 rounded-full uppercase tracking-widest">{todayRides.length}</span>
+        </h2>
         {todayRides.length === 0 ? (
-          <p className="text-sm text-admin-muted">
-            Nenhuma corrida atribuída para hoje.
+          <p className="text-sm text-admin-muted py-4 bg-white/5 rounded-xl text-center border border-dashed border-white/10">
+            Nenhuma corrida para hoje.
           </p>
         ) : (
           <div className="space-y-3">
@@ -119,16 +121,14 @@ export default function DriverAgendaPage() {
       </section>
 
       <section>
-        <h2 className="mb-3 text-xl font-bold text-admin-text">Próximos 7 dias</h2>
+        <h2 className="mb-3 text-xl font-bold text-admin-text">Próximas Corridas</h2>
         {upcomingRides.length === 0 ? (
-          <p className="text-sm text-admin-muted">
-            Nenhuma corrida nos próximos dias.
-          </p>
+          <p className="text-sm text-admin-muted">Sem agendamentos futuros.</p>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-4">
             {upcomingRides.map((ride) => (
               <div key={ride.id}>
-                <p className="mb-1 text-xs font-medium text-admin-muted">
+                <p className="mb-1 text-[10px] font-bold text-admin-muted uppercase tracking-widest">
                   {formatDate(ride.scheduled_at)}
                 </p>
                 <RideCard ride={ride} onClick={() => setSelectedRideId(ride.id)} />
@@ -137,6 +137,22 @@ export default function DriverAgendaPage() {
           </div>
         )}
       </section>
+
+      {pastRides.length > 0 && (
+        <section className="opacity-60">
+          <h2 className="mb-3 text-sm font-bold text-admin-muted uppercase tracking-widest">Corridas Passadas</h2>
+          <div className="space-y-3">
+            {pastRides.slice(-5).map((ride) => ( // Mostra apenas as últimas 5 passadas por performance
+              <div key={ride.id}>
+                <p className="mb-1 text-[10px] font-bold text-admin-muted uppercase tracking-widest">
+                  {formatDate(ride.scheduled_at)}
+                </p>
+                <RideCard ride={ride} onClick={() => setSelectedRideId(ride.id)} />
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       <RideDetailsModal
         rideId={selectedRideId}
