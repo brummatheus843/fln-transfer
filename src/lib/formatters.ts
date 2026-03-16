@@ -41,9 +41,9 @@ export function formatPhone(phone: string): string {
 
 export type RideStatus =
   | "scheduled"
+  | "displacing"
   | "in_progress"
-  | "completed"
-  | "cancelled";
+  | "completed";
 
 export function formatTime(date: string | Date): string {
   return new Intl.DateTimeFormat("pt-BR", {
@@ -54,16 +54,16 @@ export function formatTime(date: string | Date): string {
 
 export const statusLabels: Record<RideStatus, string> = {
   scheduled: "Agendada",
+  displacing: "Em deslocamento para embarque",
   in_progress: "Em andamento",
-  completed: "Finalizada",
-  cancelled: "Cancelada",
+  completed: "Concluída",
 };
 
 export const statusColors: Record<RideStatus, string> = {
   scheduled: "bg-admin-blue/10 text-admin-blue border border-admin-blue/20",
+  displacing: "bg-purple-500/10 text-purple-400 border border-purple-500/20",
   in_progress: "bg-admin-orange/10 text-admin-orange border border-admin-orange/20",
   completed: "bg-admin-green/10 text-admin-green border border-admin-green/20",
-  cancelled: "bg-admin-red/10 text-admin-red border border-admin-red/20",
 };
 
 export type FinancialStatus =

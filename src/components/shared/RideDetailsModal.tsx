@@ -95,11 +95,11 @@ export function RideDetailsModal({ rideId, open, onClose, onUpdate, view }: Ride
     });
   };
 
-  const handleDriverStatusChange = async (newDriverStatus: string) => {
+  const handleStatusChange = async (newStatus: RideStatus) => {
     if (!rideId) return;
-    const { error } = await supabase.from("rides").update({ driver_status: newDriverStatus }).eq("id", rideId);
+    const { error } = await supabase.from("rides").update({ status: newStatus }).eq("id", rideId);
     if (error) { toast.error("Erro ao atualizar status"); return; }
-    await logChange(`Alterou status para: ${newDriverStatus}`);
+    await logChange(`Alterou status para: ${statusLabels[newStatus]}`);
     toast.success("Status atualizado!");
     fetchRide();
     if (onUpdate) onUpdate();
@@ -173,9 +173,6 @@ export function RideDetailsModal({ rideId, open, onClose, onUpdate, view }: Ride
               <span className={`text-[10px] px-2.5 py-1 rounded-full border uppercase tracking-widest font-medium ${statusBadgeClasses[ride.status]}`}>
                 {statusLabels[ride.status]}
               </span>
-              <span className="text-[10px] px-2.5 py-1 rounded-full border border-admin-silver/30 bg-admin-silver/10 text-admin-silver uppercase tracking-widest font-medium">
-                {ride.driver_status || "Pendente"}
-              </span>
             </div>
             {view === "admin" && (
               <button onClick={() => router.push(`/admin/rides/${ride.id}/edit`)} className="text-admin-muted hover:text-admin-text transition flex items-center gap-1.5 text-xs">
@@ -194,17 +191,17 @@ export function RideDetailsModal({ rideId, open, onClose, onUpdate, view }: Ride
           </div>
 
           <div className="space-y-3 pt-2">
-            <label className="text-[10px] text-admin-muted uppercase tracking-widest block font-bold">Status da Operação</label>
-            <div className="grid grid-cols-1 gap-2">
-              {driverStatusOptions.map((opt) => (
+            <label className="text-[10px] text-admin-muted uppercase tracking-widest block font-bold">Alterar Status da Corrida</label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {(["scheduled", "displacing", "in_progress", "completed"] as RideStatus[]).map((s) => (
                 <button
-                  key={opt}
-                  onClick={() => handleDriverStatusChange(opt)}
-                  className={`py-2.5 px-4 rounded-xl text-xs font-bold transition-all border ${
-                    ride.driver_status === opt ? "bg-admin-silver text-admin-black border-admin-silver" : "bg-transparent text-admin-text-dim border-white/10 hover:border-white/20"
+                  key={s}
+                  onClick={() => handleStatusChange(s)}
+                  className={`py-2.5 px-4 rounded-xl text-[10px] font-bold transition-all border uppercase tracking-widest ${
+                    ride.status === s ? "bg-admin-silver text-admin-black border-admin-silver" : "bg-transparent text-admin-text-dim border-white/10 hover:border-white/20"
                   }`}
                 >
-                  {opt}
+                  {statusLabels[s]}
                 </button>
               ))}
             </div>

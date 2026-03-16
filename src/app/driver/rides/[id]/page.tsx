@@ -35,6 +35,19 @@ export default function DriverRideDetailPage() {
     fetch();
   }, [fetch]);
 
+  async function handleDisplace() {
+    const { error } = await supabase
+      .from("rides")
+      .update({ status: "displacing" })
+      .eq("id", id);
+    if (error) {
+      toast.error("Erro ao atualizar status");
+      return;
+    }
+    setStatus("displacing");
+    toast.success("Em deslocamento para embarque!");
+  }
+
   async function handleStart() {
     const { error } = await supabase
       .from("rides")
@@ -132,6 +145,22 @@ export default function DriverRideDetailPage() {
 
       <div className="space-y-2">
         {status === "scheduled" && (
+          <>
+            <button
+              onClick={handleDisplace}
+              className="bg-purple-600 w-full py-3 rounded-lg text-white font-bold"
+            >
+              Em deslocamento para embarque
+            </button>
+            <button
+              onClick={handleStart}
+              className="btn-admin w-full py-3 font-bold"
+            >
+              Iniciar Corrida (Pular deslocamento)
+            </button>
+          </>
+        )}
+        {status === "displacing" && (
           <button
             onClick={handleStart}
             className="btn-admin w-full py-3 font-bold"

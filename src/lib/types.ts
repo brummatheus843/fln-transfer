@@ -66,9 +66,8 @@ export interface Ride {
   pax_count: number;
   price: number;
   currency: "BRL" | "USD" | "EUR";
-  status: "scheduled" | "in_progress" | "completed" | "cancelled";
+  status: "scheduled" | "displacing" | "in_progress" | "completed";
   financial_status?: FinancialStatus;
-  driver_status?: string;
   notes?: string;
   started_at?: string;
   finished_at?: string;

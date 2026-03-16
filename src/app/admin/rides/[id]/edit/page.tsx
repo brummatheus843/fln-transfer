@@ -32,7 +32,6 @@ export default function EditRidePage() {
     notes: "",
     status: "scheduled",
     financial_status: "pending" as FinancialStatus,
-    driver_status: "Pendente",
   });
 
   const fetchData = useCallback(async () => {
@@ -58,7 +57,6 @@ export default function EditRidePage() {
         notes: r.notes || "",
         status: r.status || "scheduled",
         financial_status: (r.financial_status as FinancialStatus) || "pending",
-        driver_status: r.driver_status || "Pendente",
       });
     }
     
@@ -109,7 +107,6 @@ export default function EditRidePage() {
         notes: form.notes || null,
         status: form.status,
         financial_status: form.financial_status,
-        driver_status: form.driver_status,
       })
       .eq("id", id);
 
@@ -146,22 +143,14 @@ export default function EditRidePage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-white/5">
-          <div>
-            <label className="text-[10px] text-admin-muted uppercase tracking-widest mb-1.5 block">Situação (Geral)</label>
-            <select className={inputClass} value={form.status} onChange={(e) => handleChange("status", e.target.value)}>
-              <option value="scheduled">Agendada</option>
-              <option value="in_progress">Em andamento</option>
-              <option value="completed">Finalizada</option>
-              <option value="cancelled">Cancelada</option>
-            </select>
-          </div>
-          <div>
-            <label className="text-[10px] text-admin-muted uppercase tracking-widest mb-1.5 block">Status da Operação</label>
-            <select className={inputClass} value={form.driver_status} onChange={(e) => handleChange("driver_status", e.target.value)}>
-              {driverStatusOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-            </select>
-          </div>
+        <div className="pt-2 border-t border-white/5">
+          <label className="text-[10px] text-admin-muted uppercase tracking-widest mb-1.5 block">Status da Corrida</label>
+          <select className={inputClass} value={form.status} onChange={(e) => handleChange("status", e.target.value)}>
+            <option value="scheduled">Agendada</option>
+            <option value="displacing">Em deslocamento para embarque</option>
+            <option value="in_progress">Em andamento</option>
+            <option value="completed">Concluída</option>
+          </select>
         </div>
 
         <div className="pt-2 border-t border-white/5">

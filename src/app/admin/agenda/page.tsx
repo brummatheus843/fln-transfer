@@ -19,22 +19,22 @@ const localizer = dateFnsLocalizer({ format, parse, startOfWeek, getDay, locales
 
 const statusEventColors: Record<RideStatus, string> = {
   scheduled: "rgba(59,130,246,0.25)",
+  displacing: "rgba(168,85,247,0.25)",
   in_progress: "rgba(249,115,22,0.25)",
   completed: "rgba(34,197,94,0.25)",
-  cancelled: "rgba(239,68,68,0.25)",
 };
 const statusBorderColors: Record<RideStatus, string> = {
   scheduled: "rgba(59,130,246,0.5)",
+  displacing: "rgba(168,85,247,0.5)",
   in_progress: "rgba(249,115,22,0.5)",
   completed: "rgba(34,197,94,0.5)",
-  cancelled: "rgba(239,68,68,0.5)",
 };
 
 type CalendarEvent = { id: string | number; title: string; start: Date; end: Date; status: RideStatus };
 
 const WEEKDAYS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
-// ── Mobile Calendar ──
+// ── Mobile Agenda ──
 function MobileAgenda({
   rides,
   selectedDate,
@@ -152,14 +152,9 @@ function MobileAgenda({
                     </div>
                     <span className="text-sm font-medium text-admin-text truncate">{ride.client?.name ?? "—"}</span>
                   </div>
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <span className="text-[9px] px-2 py-0.5 rounded-full border border-admin-silver/30 bg-admin-silver/5 text-admin-silver uppercase font-bold">
-                      {ride.driver_status === "Em deslocamento para embarque" ? "Em desloc. p/ embarque" : (ride.driver_status || "Pendente")}
-                    </span>
-                    <span className={`text-[9px] px-2 py-0.5 rounded-full border uppercase tracking-widest font-medium whitespace-nowrap ${statusColors[ride.status]}`}>
-                      {statusLabels[ride.status]}
-                    </span>
-                  </div>
+                  <span className={`text-[9px] px-2 py-0.5 rounded-full border uppercase tracking-widest font-medium whitespace-nowrap ${statusColors[ride.status]}`}>
+                    {statusLabels[ride.status]}
+                  </span>
                 </div>
                 <div className="flex items-center gap-1.5 text-xs text-admin-text-dim">
                   <MapPin className="h-3 w-3 shrink-0 text-admin-muted" />
