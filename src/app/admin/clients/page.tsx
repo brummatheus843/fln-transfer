@@ -14,6 +14,7 @@ export default function ClientsPage() {
   const [agencies, setAgencies] = useState<Agency[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -41,23 +42,54 @@ export default function ClientsPage() {
     fetchData();
   }, [fetchData]);
 
+  function handleEdit(client: Client) {
+    setEditingId(client.id);
+    setForm({
+      name: client.name,
+      email: client.email || "",
+      phone: client.phone || "",
+      document: client.document || "",
+      agency_id: client.agency_id || "",
+      notes: client.notes || "",
+    });
+    setOpen(true);
+  }
+
+  function handleClose() {
+    setOpen(false);
+    setEditingId(null);
+    setForm({ name: "", email: "", phone: "", document: "", agency_id: "", notes: "" });
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const { error } = await supabase.from("clients").insert({
+    
+    const payload = {
       name: form.name,
       email: form.email || null,
       phone: form.phone || null,
       document: form.document || null,
       agency_id: form.agency_id || null,
       notes: form.notes || null,
-    });
-    if (error) {
-      toast.error("Erro ao cadastrar cliente");
-      return;
+    };
+
+    if (editingId) {
+      const { error } = await supabase.from("clients").update(payload).eq("id", editingId);
+      if (error) {
+        toast.error("Erro ao atualizar cliente");
+        return;
+      }
+      toast.success("Cliente atualizado com sucesso!");
+    } else {
+      const { error } = await supabase.from("clients").insert(payload);
+      if (error) {
+        toast.error("Erro ao cadastrar cliente");
+        return;
+      }
+      toast.success("Cliente cadastrado com sucesso!");
     }
-    setForm({ name: "", email: "", phone: "", document: "", agency_id: "", notes: "" });
-    setOpen(false);
-    toast.success("Cliente cadastrado com sucesso!");
+
+    handleClose();
     fetchData();
   }
 
@@ -82,7 +114,7 @@ export default function ClientsPage() {
         </button>
       </div>
 
-      <Modal open={open} onClose={() => setOpen(false)} title="Novo Cliente">
+      <Modal open={open} onClose={handleClose} title={editingId ? "Editar Cliente" : "Novo Cliente"}>
         <form onSubmit={handleSubmit} className="space-y-3">
           <div>
             <label className="text-[10px] text-admin-muted uppercase tracking-widest mb-1.5 block">Nome</label>
@@ -118,10 +150,12 @@ export default function ClientsPage() {
             <textarea className="admin-input w-full min-h-[80px] resize-none" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
           </div>
           <div className="flex gap-2 pt-2">
-            <button type="button" onClick={() => setOpen(false)} className="flex-1 bg-admin-card border border-admin-border text-admin-text-dim hover:text-admin-text hover:bg-admin-card-hover rounded-lg px-4 py-2.5 text-sm transition">
+            <button type="button" onClick={handleClose} className="flex-1 bg-admin-card border border-admin-border text-admin-text-dim hover:text-admin-text hover:bg-admin-card-hover rounded-lg px-4 py-2.5 text-sm transition">
               Cancelar
             </button>
-            <button type="submit" className="flex-1 btn-admin py-2.5">Salvar</button>
+            <button type="submit" className="flex-1 btn-admin py-2.5">
+              {editingId ? "Salvar Alterações" : "Salvar"}
+            </button>
           </div>
         </form>
       </Modal>
@@ -140,7 +174,7 @@ export default function ClientsPage() {
                   <div className="flex items-start justify-between gap-2 mb-3">
                     <p className="font-semibold text-admin-text text-sm">{client.name}</p>
                     <div className="flex gap-1 shrink-0">
-                      <button className="p-1.5 rounded-lg text-admin-muted hover:text-admin-text hover:bg-white/5 transition">
+                      <button className="p-1.5 rounded-lg text-admin-muted hover:text-admin-text hover:bg-white/5 transition" onClick={() => handleEdit(client)}>
                         <Pencil className="h-3.5 w-3.5" />
                       </button>
                       <button className="p-1.5 rounded-lg text-admin-muted hover:text-admin-red hover:bg-admin-red/10 transition" onClick={() => handleDelete(client.id)}>
@@ -195,7 +229,7 @@ export default function ClientsPage() {
                       <td className="text-admin-text-dim">{client.agency?.name ?? "—"}</td>
                       <td>
                         <div className="flex gap-1">
-                          <button className="p-1.5 rounded-lg text-admin-muted hover:text-admin-text hover:bg-white/5 transition">
+                          <button className="p-1.5 rounded-lg text-admin-muted hover:text-admin-text hover:bg-white/5 transition" onClick={() => handleEdit(client)}>
                             <Pencil className="h-4 w-4" />
                           </button>
                           <button className="p-1.5 rounded-lg text-admin-muted hover:text-admin-red hover:bg-admin-red/10 transition" onClick={() => handleDelete(client.id)}>
