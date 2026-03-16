@@ -110,7 +110,7 @@ export function RideDetailsModal({ rideId, open, onClose, onUpdate, view }: Ride
     const toastId = toast.loading("Preenchendo seu modelo de voucher...");
 
     try {
-      const templateUrl = "/voucher-template.pdf";
+      const templateUrl = "/voucher-template.pdf?v=" + new Date().getTime();
       const existingPdfBytes = await fetch(templateUrl).then(res => res.arrayBuffer());
       const pdfDoc = await PDFDocument.load(existingPdfBytes);
       const form = pdfDoc.getForm();
