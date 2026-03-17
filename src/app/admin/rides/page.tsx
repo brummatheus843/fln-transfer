@@ -357,8 +357,14 @@ export default function RidesPage() {
 
   const range = getDateRange(period, customFrom, customTo);
   const periodFiltered = allRides.filter((r) => {
-    const d = r.scheduled_at.slice(0, 10);
-    return d >= range.from && d <= range.to;
+    // Converte scheduled_at para objeto Date local para pegar a data correta no fuso do navegador
+    const dateObj = new Date(r.scheduled_at);
+    const year = dateObj.getFullYear();
+    const month = String(dateObj.getMonth() + 1).padStart(2, "0");
+    const day = String(dateObj.getDate()).padStart(2, "0");
+    const localDate = `${year}-${month}-${day}`;
+    
+    return localDate >= range.from && localDate <= range.to;
   });
 
   const activeStatus = statusTabs.find((t) => t.key === activeTab)?.status ?? null;
