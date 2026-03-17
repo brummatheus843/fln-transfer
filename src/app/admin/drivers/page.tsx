@@ -36,12 +36,12 @@ export default function DriversPage() {
 
   const fetchData = useCallback(async () => {
     const [drRes, prRes] = await Promise.all([
-      supabase.from("drivers").select("*").order("full_name"),
+      supabase.from("drivers").select("*, profile:profiles(email, full_name)").order("full_name"),
       supabase.from("profiles").select("*").order("full_name")
     ]);
     
     if (drRes.error) toast.error("Erro ao carregar motoristas");
-    else setDrivers(drRes.data ?? []);
+    else setDrivers(drRes.data as any ?? []);
     
     if (prRes.error) toast.error("Erro ao carregar contas");
     else setProfiles(prRes.data ?? []);
@@ -293,8 +293,22 @@ export default function DriversPage() {
                       <td className="text-admin-text font-medium">{driver.full_name}</td>
                       <td className="text-admin-text-dim">{driver.phone || "—"}</td>
                       <td className="text-admin-text-dim">{driver.cpf || "—"}</td>
-                      <td className="text-admin-text-dim">
-                        {profiles.find(p => p.id === driver.profile_id)?.full_name || "Não vinculada"}
+                      <td className="text-admin-text-dim text-xs">
+                        {driver.profile_id ? (
+                          (driver as any).profile ? (
+                            <div className="flex flex-col">
+                              <span>{(driver as any).profile.full_name}</span>
+                              <span className="text-[10px] opacity-50">{(driver as any).profile.email}</span>
+                            </div>
+                          ) : profiles.find(p => String(p.id) === String(driver.profile_id)) ? (
+                            <div className="flex flex-col">
+                              <span>{profiles.find(p => String(p.id) === String(driver.profile_id))?.full_name}</span>
+                              <span className="text-[10px] opacity-50">{profiles.find(p => String(p.id) === String(driver.profile_id))?.email}</span>
+                            </div>
+                          ) : "Conta não encontrada"
+                        ) : (
+                          <span className="opacity-30">Não vinculada</span>
+                        )}
                       </td>
                       <td>
                         <span className={`text-[10px] px-2.5 py-1 rounded-full border uppercase tracking-widest font-medium ${
