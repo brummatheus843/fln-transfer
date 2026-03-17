@@ -16,9 +16,16 @@ import { Modal } from "@/components/shared/Modal";
 const inputClass =
   "w-full bg-admin-card border border-admin-border rounded-lg px-3 py-2 text-sm text-admin-text focus:outline-none focus:border-admin-silver/50";
 
+type DriverWithProfile = Driver & {
+  profile?: {
+    email: string;
+    full_name: string;
+  };
+};
+
 export default function DriversPage() {
   const supabase = createClient();
-  const [drivers, setDrivers] = useState<Driver[]>([]);
+  const [drivers, setDrivers] = useState<DriverWithProfile[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
@@ -41,7 +48,7 @@ export default function DriversPage() {
     ]);
     
     if (drRes.error) toast.error("Erro ao carregar motoristas");
-    else setDrivers(drRes.data as any ?? []);
+    else setDrivers(drRes.data as DriverWithProfile[] ?? []);
     
     if (prRes.error) toast.error("Erro ao carregar contas");
     else setProfiles(prRes.data ?? []);
@@ -295,10 +302,10 @@ export default function DriversPage() {
                       <td className="text-admin-text-dim">{driver.cpf || "—"}</td>
                       <td className="text-admin-text-dim text-xs">
                         {driver.profile_id ? (
-                          (driver as any).profile ? (
+                          driver.profile ? (
                             <div className="flex flex-col">
-                              <span>{(driver as any).profile.full_name}</span>
-                              <span className="text-[10px] opacity-50">{(driver as any).profile.email}</span>
+                              <span>{driver.profile.full_name}</span>
+                              <span className="text-[10px] opacity-50">{driver.profile.email}</span>
                             </div>
                           ) : profiles.find(p => String(p.id) === String(driver.profile_id)) ? (
                             <div className="flex flex-col">
