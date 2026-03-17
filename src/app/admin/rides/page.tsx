@@ -136,7 +136,7 @@ function RidesTable({
               ride={ride} 
               onSelect={onSelect} 
               isSelected={selectedIds.has(ride.id)}
-              onToggleSelect={handleToggleSelect}
+              onToggleSelect={onToggleSelect}
             />
           ))
         )}
@@ -327,8 +327,9 @@ export default function RidesPage() {
       
       toast.success(`${selectedIds.size} corrida(s) excluída(s) com sucesso.`);
       fetchRides();
-    } catch (err: any) {
-      toast.error("Erro ao excluir corridas: " + err.message);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Erro desconhecido";
+      toast.error("Erro ao excluir corridas: " + message);
     }
   };
 
@@ -348,8 +349,9 @@ export default function RidesPage() {
       
       toast.success(`Status de ${selectedIds.size} corrida(s) atualizado.`);
       fetchRides();
-    } catch (err: any) {
-      toast.error("Erro ao atualizar status: " + err.message);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Erro desconhecido";
+      toast.error("Erro ao atualizar status: " + message);
     }
   };
 

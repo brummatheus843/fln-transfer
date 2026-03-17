@@ -14,9 +14,9 @@ import type { Ride } from "@/lib/types";
 
 const statusBadgeClasses: Record<RideStatus, string> = {
   scheduled: "bg-admin-blue/10 text-admin-blue border-admin-blue/20",
+  displacing: "bg-purple-500/10 text-purple-400 border-purple-500/20",
   in_progress: "bg-admin-orange/10 text-admin-orange border-admin-orange/20",
   completed: "bg-admin-green/10 text-admin-green border-admin-green/20",
-  cancelled: "bg-admin-red/10 text-admin-red border-admin-red/20",
 };
 
 function DetailRow({ label, value }: { label: string; value: React.ReactNode }) {
@@ -53,19 +53,6 @@ export default function RideDetailPage() {
     fetch();
   }, [fetch]);
 
-  async function handleCancel() {
-    const { error } = await supabase
-      .from("rides")
-      .update({ status: "cancelled" })
-      .eq("id", id);
-    if (error) {
-      toast.error("Erro ao cancelar corrida");
-      return;
-    }
-    toast.success("Corrida cancelada!");
-    setRide((prev) => prev ? { ...prev, status: "cancelled" } : prev);
-  }
-
   if (loading) return <p className="text-admin-muted text-center py-8">Carregando...</p>;
   if (!ride) return <p className="text-admin-muted text-center py-8">Corrida não encontrada.</p>;
 
@@ -82,14 +69,6 @@ export default function RideDetailPage() {
           >
             Editar
           </button>
-          {ride.status !== "cancelled" && ride.status !== "completed" && (
-            <button
-              onClick={handleCancel}
-              className="bg-admin-card border border-admin-red/20 text-admin-red hover:bg-admin-red/10 rounded-lg px-4 py-2 text-xs md:text-sm transition flex-1 sm:flex-none"
-            >
-              Cancelar
-            </button>
-          )}
         </div>
       </div>
 

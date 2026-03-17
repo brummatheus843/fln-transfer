@@ -6,7 +6,6 @@ import {
   formatDateTime,
   statusLabels,
   type RideStatus,
-  driverStatusOptions,
   formatDate,
   formatCurrency
 } from "@/lib/formatters";
@@ -19,9 +18,9 @@ import { PDFDocument } from "pdf-lib";
 
 const statusBadgeClasses: Record<RideStatus, string> = {
   scheduled: "bg-admin-blue/10 text-admin-blue border-admin-blue/20",
+  displacing: "bg-purple-500/10 text-purple-400 border-purple-500/20",
   in_progress: "bg-admin-orange/10 text-admin-orange border-admin-orange/20",
   completed: "bg-admin-green/10 text-admin-green border-admin-green/20",
-  cancelled: "bg-admin-red/10 text-admin-red border-admin-red/20",
 };
 
 function DetailRow({ label, value }: { label: string; value: React.ReactNode }) {

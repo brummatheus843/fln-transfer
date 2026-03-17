@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import type { Client, Driver, Agency, FinancialStatus } from "@/lib/types";
-import { financialStatusLabels, driverStatusOptions } from "@/lib/formatters";
+import { financialStatusLabels } from "@/lib/formatters";
 
 const inputClass =
   "w-full bg-admin-card border border-admin-border rounded-lg px-3 py-2 text-sm text-admin-text focus:outline-none focus:border-admin-silver/50";
